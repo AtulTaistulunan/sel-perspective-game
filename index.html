@@ -134,12 +134,17 @@ b,strong,h1,h2,h3{font-weight:400}
 .tml i{width:.8em;height:.8em;border-radius:50%;flex:none}
 .tml.on{border-color:var(--accent);background:#fff1d6}
 .aha{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
-.aha .col{border-radius:.9em;padding:.6em .8em;display:flex;gap:.7em;align-items:center}
-.ahaimg{width:6.5em;height:6.5em;flex:none;border-radius:.8em;background:#fff;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
+.aha .col{border-radius:.9em;padding:.45em .7em;line-height:1.45;font-size:.88em;display:flex;gap:.7em;align-items:center}
+.ahaimg{width:5.2em;height:5.2em;flex:none;border-radius:.8em;background:#fff;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
 .ahaimg img{width:115%}
 .ahaimg .e{font-size:3.5em}
 .pill{display:inline-block;background:#fff;border-radius:.6em;padding:0 .5em;margin:.1em;font-weight:400}
-.quote{background:#fff1d6;border-radius:.8em;padding:.5em .9em;margin-top:.7em}
+.understand{text-align:center;color:var(--wood);font-size:.92em;margin-bottom:.2em}
+.needhint{background:#f4f8ff;border:.15em dashed #a9c4e6;border-radius:.8em;padding:.5em .8em;margin-bottom:.6em;font-size:.88em}
+.needhint .ht{color:#3a6aa8;margin-bottom:.25em}
+.needhint ul{margin:0;padding-left:1.2em;display:grid;grid-template-columns:1fr 1fr;column-gap:1.2em;line-height:1.5}
+.needhint .hn{color:var(--soft);font-size:.9em;margin-top:.2em}
+.quote{background:#fff1d6;border-radius:.8em;padding:.4em .9em;margin-top:.5em;font-size:.92em}
 textarea{width:100%;font-size:1em;font-family:inherit;border:.2em solid #e2d5bd;border-radius:.8em;padding:.4em .6em;margin-top:.5em;resize:none}
 /* 角色設定 */
 .setup{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
@@ -404,6 +409,7 @@ const 台詞 = {
     ["小華", "微笑", "小明，下次分組，我們再同一組！"],
     ["小明", "放心", "好！一言為定！"],
   ],
+  理解提醒: "理解對方為什麼這樣做，不代表傷人的說法就沒關係；理解，是為了找到更好的做法。",
   同學閒聊: ["標題寫什麼？", "這個顏色好看！", "我來畫插圖！", "嗯……", "哈哈！", "♪", "換我畫！", "好漂亮！"],
 };
 
@@ -462,14 +468,14 @@ const 任務 = {
   },
   開口: {
     步驟: "步驟 2、3｜想、說",
-    題目: "小明想一想之後，要怎麼說出自己的感受？",
+    題目: "小明想一想之後，要怎麼說出自己的感受？（可以試試「我訊息」：當你……，我感到……，我希望……）",
     選項: [
       { 字: "「你為什麼不讓我加入？你很過分耶！」", 台詞: ["小明", "生氣", "你為什麼不讓我加入？你很過分耶！"], 小明: 0, 小華: +1, 友誼: -1, 重來: true,
         反應: ["小華", "著急", "我、我又沒有那個意思！你幹嘛罵我？"],
         換位: { 對象: "小華", 問題: "如果你是小華，突然被說「很過分」，心裡會有什麼感覺？", 感受: ["委屈", "生氣", "想保護自己", "難過"] },
         回饋: "被指責的時候，人常常會先想保護自己，就比較聽不進去。",
         後果: [["旁白", "", "兩個人都有點激動，氣氛僵住了。"], ["旁白", "", "小華深吸一口氣，決定還是把原因說清楚。"]] },
-      { 字: "「我剛剛有點難過。你們是不是不想跟我同組？」", 台詞: ["小明", "平靜", "我剛剛有點難過。你們是不是不想跟我同組？"], 小明: -1, 小華: -1, 友誼: +1, 徽章: ["想","說"], 回饋: "說出自己的感受，而不是罵人，對方比較聽得進去！" },
+      { 字: "「剛剛你說人滿了，我感到有點難過。我希望知道原因，可以告訴我嗎？」", 台詞: ["小明", "平靜", "剛剛你說人滿了，我感到有點難過。我希望知道原因，可以告訴我嗎？"], 小明: -1, 小華: -1, 友誼: +1, 徽章: ["想","說"], 回饋: "這就是「我訊息」：當你……，我感到……，我希望……。說出感受而不是罵人，對方比較聽得進去！" },
     ],
   },
   辦法: {
@@ -501,6 +507,11 @@ const 任務 = {
       { 字: "「對不起，老師規定最多 4 人，我不是不想跟你同組喔！我們一起去問老師好嗎？」", 好: true, 回饋: "說出原因，對方就不會誤會了！你獲得了「換位思考之星」！" },
     ],
   },
+  需求提示: {
+    標題: "小提示：感受的背後，常藏著一個「需要」",
+    內容: ["生氣 → 可能需要被尊重、公平", "難過 → 可能需要被接納、有人陪", "著急、緊張 → 可能需要規則清楚", "擔心 → 可能需要安心、支持"],
+    註: "這些都只是「可能」，不是唯一答案。",
+  },
   反思: { 題目: "下次我和同學意見不同的時候，我會先……", 選項: ["停下來深呼吸","想想他可能是怎麼想的","說出我的感受，而不是罵人","找一個兩個人都 OK 的辦法"] },
 };
 
@@ -528,7 +539,7 @@ const 頭像檔名 = { 老師: "配角", 同學: "配角", 主角女: "主角女
 const 角色設定 = {
   主角預設: "小明", 組長預設: "小華", 名字最多字數: 4,
   稱號範例: ["班長小虎", "阿寶", "小樂", "星星"],
-  提醒: "請自己取一個稱號，不要用班上同學的真實名字喔！",
+  提醒: "請自己取一個稱號，不要用班上同學的真實名字喔！故事裡的角色不等於真實的你，也不代表班上任何人。",
 };
 const CFG = { p: { name: "小明", g: "男" }, f: { name: "小華", g: "男" } };
 // 把劇本裡的「小明」「小華」換成學生取的名字，{他P}／{他F} 依性別換成他或她
@@ -1138,9 +1149,10 @@ function cardTask(cfg, who) {
     };
   });
 }
-function listTask(title, opts) {
+function listTask(title, opts, hint) {
   return new Promise(res => {
-    const s = sheet(`<div class="ribbon">任務</div><h2>${esc(title)}</h2><div class="opts"></div>`);
+    const H = hint ? `<div class="needhint"><div class="ht">${esc(hint.標題)}</div><ul>${hint.內容.map(x => `<li>${esc(x)}</li>`).join("")}</ul><div class="hn">${esc(hint.註)}</div></div>` : "";
+    const s = sheet(`<div class="ribbon">任務</div><h2>${esc(title)}</h2>${H}<div class="opts"></div>`);
     opts.forEach((o, i) => { const b = document.createElement("button"); b.className = "choice"; b.textContent = tx(o); b.onclick = () => { sfx.tap(); res(i); }; s.querySelector(".opts").appendChild(b); });
   });
 }
@@ -1175,13 +1187,14 @@ function thermoTask() {
 function ahaPanel() {
   return new Promise(res => {
     const pills = a => a.map(x => `<span class="pill">${esc(x)}</span>`).join("");
-    const s = sheet(`<h2 style="text-align:center">同一件事，兩種心情</h2>
+    const s = sheet(`<h2 style="text-align:center;margin-bottom:.35em">同一件事，兩種心情</h2>
       <div class="aha">
         <div class="col" style="background:#e3eefb"><div class="ahaimg">${portraitHTML("小明", "難過")}</div><div><b style="color:var(--ming)">小明</b><br>感受：${pills(S.mingFeel)}<br>心情溫度：${S.mingTemp} / 5<br>想要：${pills([S.mingNeed])}</div></div>
         <div class="col" style="background:#e0f3ec"><div class="ahaimg">${portraitHTML("小華", "為難")}</div><div><b style="color:var(--hua)">小華</b><br>感受：${pills(S.huaFeel)}<br>想要：${pills([S.huaNeed])}</div></div>
       </div>
       <div class="quote">小明以為：「他們不想要我。」<br>小華其實是：「我怕違反規定，又太急了。」</div>
-      <h2 style="text-align:center;margin-top:.6em">看不到對方的心，就可能誤會。</h2>
+      <h2 style="text-align:center;margin:.45em 0 .1em;font-size:1.15em">看不到對方的心，就可能誤會。</h2>
+      <div class="understand">${esc(台詞.理解提醒)}</div>
       <div class="row"><button class="btn" id="ok">回到現在 ▶</button></div>`);
     sfx.badge(); s.querySelector("#ok").onclick = () => { sfx.tap(); closeSheet(); res(); };
   });
@@ -1283,7 +1296,7 @@ async function play() {
   S.gender = g.選項[gi][0]; gi === 0 ? sfx.good() : sfx.hmm();
   await feedback(gi === 0 ? "good" : "info", g.選項[gi][1]); endTalk();
   S.mingTemp = await thermoTask();
-  const ni = await listTask(任務.小明需求.題目, 任務.小明需求.選項); S.mingNeed = 任務.小明需求.選項[ni];
+  const ni = await listTask(任務.小明需求.題目, 任務.小明需求.選項, 任務.需求提示); S.mingNeed = 任務.小明需求.選項[ni];
   sfx.good(); await feedback("info", 任務.小明需求.回饋); closeSheet();
 
   // 轉場：換個位置
@@ -1307,7 +1320,7 @@ async function play() {
   const L2 = 台詞.第二關_小明來了;
   await say(...L2[0]); emote(E.小華, "急！"); await say(...L2[1]); await say(...L2[2]); endTalk();
   S.huaFeel = await cardTask(任務.小華感受, "小華");
-  const hi = await listTask(任務.小華需求.題目, 任務.小華需求.選項); S.huaNeed = 任務.小華需求.選項[hi];
+  const hi = await listTask(任務.小華需求.題目, 任務.小華需求.選項, 任務.需求提示); S.huaNeed = 任務.小華需求.選項[hi];
   sfx.good(); await feedback("good", 任務.小華需求.回饋); closeSheet();
   await ahaPanel();
 
