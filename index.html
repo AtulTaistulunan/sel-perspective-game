@@ -658,19 +658,15 @@ function heartsHTML(n) {
 const IMG = {};
 const loadImg = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
 async function loadAll() {
-  IMG.map = await loadImg(素材.地圖);
-  IMG.小明 = await loadImg(素材.走路.小明);
-  IMG.小華 = await loadImg(素材.走路.小華);
-  IMG.npc = await loadImg(素材.同學老師);
-  IMG.act = await loadImg(素材.同學動作);
-  IMG.teacherWalk = await loadImg(素材.老師走路);
-  IMG.icons = await loadImg(素材.圖示);
-  IMG.posterArt = await loadImg(素材.海報插圖);
-  IMG.bird = await loadImg(素材.小鳥);
-  IMG.girl_小明 = await loadImg(素材.走路女.小明);
-  IMG.girl_小華 = await loadImg(素材.走路女.小華);
-  for (const who of ["主角女", "組長女"]) for (const n of [1, 2, 3, 4, 5, 6]) IMG[`p_${who}_${n}`] = await loadImg(`${素材.頭像}${who}_${n}.png`);
-  for (const who in 表情) for (const [n] of Object.values(表情[who])) IMG[`p_${who}_${n}`] = await loadImg(`${素材.頭像}${頭像檔名[who] || who}_${n}.png`);
+  // 所有圖片同時下載，全班一起開啟時也比較快
+  const jobs = {
+    map: 素材.地圖, 小明: 素材.走路.小明, 小華: 素材.走路.小華, npc: 素材.同學老師, act: 素材.同學動作,
+    teacherWalk: 素材.老師走路, icons: 素材.圖示, posterArt: 素材.海報插圖, bird: 素材.小鳥,
+    girl_小明: 素材.走路女.小明, girl_小華: 素材.走路女.小華,
+  };
+  for (const who of ["主角女", "組長女"]) for (const n of [1, 2, 3, 4, 5, 6]) jobs[`p_${who}_${n}`] = `${素材.頭像}${who}_${n}.png`;
+  for (const who in 表情) for (const [n] of Object.values(表情[who])) jobs[`p_${who}_${n}`] = `${素材.頭像}${頭像檔名[who] || who}_${n}.png`;
+  await Promise.all(Object.entries(jobs).map(async ([k, src]) => { IMG[k] = await loadImg(src); }));
 }
 
 /* ---------- 教室場景（暫代：程式畫的像素教室） ---------- */
