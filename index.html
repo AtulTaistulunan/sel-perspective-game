@@ -1,0 +1,1544 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>換個位置看看</title>
+<!-- 字體：jf open 粉圓（Huninn，開源授權），由 Google Fonts 載入；沒有網路時會改用系統字體 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#3b2f2a; --soft:#7a6a5c; --paper:#fff8ea; --wood:#8a5a3b; --wood2:#b98557;
+  --ming:#4f8fd9; --hua:#3fae8c; --accent:#f2a33a; --good:#3fae6a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#2b2230;overflow:hidden}
+body{font-family:"Huninn","Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;-webkit-user-select:none;user-select:none}
+#stage{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;overflow:hidden;background:#000;
+  font-size:min(2.25vw,4vh)}
+canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;transition:filter .8s}
+#stage.memory canvas{filter:sepia(.75) saturate(.8) brightness(1.05)}
+#stage.memory::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 6em rgba(80,50,20,.55)}
+#stage.memory::before{content:"回憶中";position:absolute;top:2%;left:50%;transform:translateX(-50%);z-index:5;pointer-events:none;
+  background:rgba(92,58,34,.85);color:#fff3dc;padding:.15em 1em;border-radius:2em;font-size:.85em;letter-spacing:.15em}
+
+/* 上方資訊列 */
+#top{position:absolute;left:1.5%;top:2%;right:1.5%;display:flex;gap:.6em;align-items:flex-start;pointer-events:none;z-index:5}
+.tagbox{white-space:nowrap;background:rgba(255,248,234,.94);border:.18em solid var(--wood);border-radius:.7em;padding:.2em .7em;font-weight:400;box-shadow:0 .2em 0 rgba(0,0,0,.25)}
+b,strong,h1,h2,h3{font-weight:400}
+#stageName{font-size:.9em}
+#stageName:empty,#stars:empty{display:none}
+/* 善意星星收集動畫 */
+#stars.pulse{animation:spulse .6s ease}
+@keyframes spulse{40%{transform:scale(1.25);background:#fff3c4}}
+.flystar{position:absolute;z-index:40;display:flex;flex-direction:column;align-items:center;pointer-events:none;
+  transform:translate(-50%,-50%) scale(.2);opacity:0;transition:transform .45s cubic-bezier(.3,1.6,.5,1),opacity .3s}
+.flystar .big{font-size:5.5em;line-height:1;filter:drop-shadow(0 0 .25em rgba(255,214,90,.9))}
+.flystar .big .ico{width:1.2em;height:1.2em}
+.flystar .cap{margin-top:.2em;background:var(--accent);color:#fff;border:.15em solid #c47f22;border-radius:2em;padding:.1em 1em;font-size:1.2em;white-space:nowrap}
+.flystar.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+.flystar.fly{transition:left .7s ease-in,top .7s ease-in,transform .7s ease-in,opacity .7s ease-in}
+.spark{position:absolute;z-index:39;width:.5em;height:.5em;border-radius:50%;background:#ffd84a;pointer-events:none;transition:transform .6s ease-out,opacity .6s ease-out}
+#mute{pointer-events:auto;margin-left:auto;cursor:pointer;font-size:1em}
+#hud{display:none;gap:.5em;align-items:center;font-size:.85em}
+#stage.hudon #stageName{font-size:.8em}
+#hud.on{display:flex}
+.meter{display:flex;align-items:center;gap:.3em;font-size:.8em}
+.bars{display:flex;gap:.12em}
+.bars i{width:.55em;height:1em;border-radius:.15em;background:#e7ddc9;transition:background .4s}
+#hearts{display:inline-flex;gap:.1em;align-items:center}
+.hrt{color:#e2574c;font-size:1.05em;line-height:1}
+.hrt.off{color:#d9cbb0}
+/* AI 生成的像素圖示（遊戲素材/sprites/圖示.png，4 x 4） */
+.ico{display:inline-block;width:1.2em;height:1.2em;background-size:400% 400%;background-repeat:no-repeat;image-rendering:pixelated;vertical-align:-.2em}
+.badge{display:inline-block;padding:0 .35em;border-radius:.4em;background:#e7ddc9;color:#b5a58e;margin-left:.15em;font-size:.85em;transition:all .4s}
+.badge.on{background:var(--accent);color:#fff}
+
+/* 提示橫幅 */
+#hint::before{content:"";display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--accent);margin-right:.5em;vertical-align:.05em;box-shadow:0 0 0 .2em rgba(242,163,58,.35)}
+#hint{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);background:rgba(59,47,42,.88);color:#fff;
+  padding:.4em 1.1em;border-radius:2em;font-size:.95em;font-weight:400;display:none;z-index:5;white-space:nowrap;animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateX(-50%) translateY(-.25em)}}
+
+/* 大頭像 */
+.portrait{position:absolute;bottom:0;width:28%;height:70%;display:none;z-index:6;transition:filter .25s,transform .25s;pointer-events:none}
+.portrait.on{display:block}
+.portrait.dim{filter:brightness(.55) saturate(.6);transform:translateY(3%)}
+#pl{left:-1.5%}
+#pr{right:-1.5%}
+.portrait img{position:absolute;bottom:0;width:100%;height:100%;object-fit:contain;object-position:bottom}
+.ph{position:absolute;bottom:4%;left:12%;right:12%;height:72%;border-radius:1em 1em .6em .6em;border:.25em solid;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 .3em 0 rgba(0,0,0,.3)}
+.ph .e{font-size:4.6em;line-height:1}
+.ph .n{font-weight:400;color:#fff;padding:.05em .7em;border-radius:.6em;margin-top:.3em}
+
+/* 對話框 */
+#dlg{position:absolute;left:24%;right:24%;bottom:3%;min-height:24%;background:var(--paper);border:.25em solid var(--wood);
+  border-radius:1.2em;padding:.9em 1.2em 1em;box-shadow:0 .35em 0 rgba(0,0,0,.35);display:none;z-index:7;font-size:1.05em;line-height:1.5;cursor:pointer}
+#dlg.asking{padding:.8em 1em .7em}
+#dlg.on{display:block}
+#dlg.narr{background:#ece6dc;color:#6b5f55;border-style:dashed}
+#name{position:absolute;top:-1.15em;left:1em;background:var(--wood2);color:#fff;font-weight:400;padding:.05em .8em;border-radius:.6em;border:.15em solid var(--wood);font-size:.9em}
+#more{position:absolute;right:.8em;bottom:.2em;font-size:.8em;color:var(--wood);animation:bob2 .8s infinite}
+@keyframes bob2{50%{transform:translateY(.2em)}}
+
+/* 選單 */
+#menu{display:none}
+#opts{display:flex;flex-direction:column;gap:.3em;margin-top:.4em}
+#opts:empty{display:none}
+.opt{background:#fff;border:.18em solid #d9c3a0;border-radius:.7em;padding:.25em .7em;font-size:.82em;text-align:left;cursor:pointer;
+  font-family:inherit;color:var(--ink);box-shadow:0 .15em 0 #d9c3a0;animation:slide .25s ease both;line-height:1.45}
+.opt:hover,.opt:active{background:#fff1d6;border-color:var(--accent)}
+.opt b{color:var(--accent);margin-right:.3em}
+@keyframes slide{from{transform:translateY(.5em);opacity:0}}
+
+/* 面板（任務、反思、摘要） */
+#sheet{position:absolute;inset:6% 8% 5%;background:var(--paper);border:.3em solid var(--wood);border-radius:1.3em;
+  box-shadow:0 .4em 0 rgba(0,0,0,.35);padding:1em 1.4em;display:none;z-index:9;overflow:auto;animation:pop .3s}
+#sheet.on{display:block}
+@keyframes pop{from{transform:scale(.94);opacity:0}}
+#sheet h2{margin:.1em 0 .5em;font-size:1.3em}
+.ribbon{display:inline-block;background:var(--wood2);color:#fff;border-radius:.5em;padding:0 .7em;font-size:.8em;font-weight:400;margin-bottom:.3em}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:.5em}
+.card{border:.2em solid #e2d5bd;background:#fff;border-radius:.8em;padding:.5em .2em;text-align:center;cursor:pointer;font-family:inherit;font-size:.95em;font-weight:400;color:var(--ink)}
+.card b{display:flex;align-items:center;justify-content:center;height:2.6em}
+.card b .ico{width:2.6em;height:2.6em}
+.card b:empty{display:none}
+.card{min-height:3.4em;font-size:1.05em}
+.card .dot{display:block;width:.7em;height:.7em;border-radius:50%;margin:0 auto .3em}
+.card.on{border-color:var(--accent);background:#fff1d6;transform:translateY(-.2em)}
+.row{display:flex;gap:.7em;justify-content:center;flex-wrap:wrap;margin-top:.8em}
+.btn{border:none;border-radius:.8em;padding:.45em 1.4em;font-size:1.05em;font-weight:400;background:var(--accent);color:#fff;
+  box-shadow:0 .22em 0 #c47f22;cursor:pointer;font-family:inherit}
+.btn:active{transform:translateY(.15em);box-shadow:0 .07em 0 #c47f22}
+.btn:disabled{opacity:.35;pointer-events:none}
+.btn.ghost{background:#fff;color:var(--ink);box-shadow:0 .22em 0 #d9cbb0;border:.15em solid #d9cbb0}
+.choice{display:block;width:100%;text-align:left;border:.2em solid #e2d5bd;background:#fff;border-radius:.8em;padding:.5em .8em;margin-top:.5em;
+  font-size:1em;cursor:pointer;font-family:inherit;color:var(--ink)}
+.choice.on{border-color:var(--accent);background:#fff1d6}
+/* 心情溫度計 */
+.tmwrap{display:flex;align-items:center;justify-content:center;gap:1.8em;margin-top:.3em}
+.tmface{width:9.5em;height:9.5em;border-radius:1em;background:linear-gradient(#fff6e4,#f3e2c4);border:.2em solid #e2d5bd;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
+.tmface img{width:112%;margin-bottom:-6%}
+.tmface .e{font-size:5em;line-height:1.6}
+.tm{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.tube{position:relative;width:1.7em;height:11em;background:repeating-linear-gradient(to top,#fff 0 calc(20% - .12em),#eadfca calc(20% - .12em) 20%);
+  border:.22em solid var(--wood);border-bottom:none;border-radius:1em 1em 0 0;overflow:hidden}
+.fill{position:absolute;left:0;right:0;bottom:0;height:0;transition:height .35s,background .35s;opacity:.92}
+.bulb{width:3.2em;height:3.2em;border-radius:50%;border:.22em solid var(--wood);margin-top:-.5em;background:#e7ddc9;transition:background .35s;box-shadow:inset -.3em -.3em 0 rgba(0,0,0,.12)}
+.tmlabels{display:flex;flex-direction:column;gap:.35em}
+.tml{display:flex;align-items:center;gap:.5em;border:.18em solid #e2d5bd;background:#fff;border-radius:.7em;padding:.2em .8em;cursor:pointer;font-family:inherit;font-size:.95em;color:var(--ink);text-align:left}
+.tml i{width:.8em;height:.8em;border-radius:50%;flex:none}
+.tml.on{border-color:var(--accent);background:#fff1d6}
+.aha{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
+.aha .col{border-radius:.9em;padding:.6em .8em;display:flex;gap:.7em;align-items:center}
+.ahaimg{width:6.5em;height:6.5em;flex:none;border-radius:.8em;background:#fff;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
+.ahaimg img{width:115%}
+.ahaimg .e{font-size:3.5em}
+.pill{display:inline-block;background:#fff;border-radius:.6em;padding:0 .5em;margin:.1em;font-weight:400}
+.quote{background:#fff1d6;border-radius:.8em;padding:.5em .9em;margin-top:.7em}
+textarea{width:100%;font-size:1em;font-family:inherit;border:.2em solid #e2d5bd;border-radius:.8em;padding:.4em .6em;margin-top:.5em;resize:none}
+/* 角色設定 */
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
+.scard{display:flex;gap:.6em;align-items:center;background:#fff;border:.18em solid #ecdcbc;border-radius:1em;padding:.55em .6em}
+.sface{flex:none;width:5.2em;height:5.2em;border-radius:.8em;background:linear-gradient(#fff6e4,#f3e2c4);overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
+.sface img{width:112%}.sface .e{font-size:3.5em}
+.sform{flex:1;min-width:0}
+.slabel{color:var(--wood);margin-bottom:.2em;white-space:nowrap;font-size:.95em}.slabel span{color:var(--soft);font-size:.78em}
+.sform input{width:100%;font-family:inherit;font-size:1.1em;border:.18em solid #e2d5bd;border-radius:.6em;padding:.25em .5em;-webkit-user-select:text;user-select:text;color:var(--ink)}
+.sform input:focus{outline:none;border-color:var(--accent)}
+.sg{display:flex;gap:.4em;margin-top:.4em}
+.sg button,.chip{white-space:nowrap;font-family:inherit;border:.15em solid #e2d5bd;background:#fff;border-radius:2em;padding:.15em .9em;cursor:pointer;color:var(--ink);font-size:.95em}
+.sg button.on{background:var(--accent);border-color:#c47f22;color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:.3em;margin-top:.4em}.chip{font-size:.8em;padding:.1em .6em;background:#fff8ea}
+.snote{margin-top:.6em;text-align:center;color:#b0702e;font-size:.95em}
+/* 旅程摘要（欣賞式稱讚） */
+.praise{display:grid;grid-template-columns:1fr 1fr;gap:.55em}
+.pcard{display:flex;gap:.6em;align-items:flex-start;background:#fff;border:.15em solid #ecdcbc;border-radius:.9em;padding:.55em .7em;animation:rise .4s ease both}
+.pcard:nth-child(2){animation-delay:.12s}.pcard:nth-child(3){animation-delay:.24s}.pcard:nth-child(4){animation-delay:.36s}.pcard:nth-child(5){animation-delay:.48s}.pcard:nth-child(6){animation-delay:.6s}
+.pcard .pic{flex:none;font-size:1.7em;line-height:1}.pcard .pic .ico{width:1.2em;height:1.2em}
+.pt{color:var(--wood);font-size:1em;margin-bottom:.15em}.pw{font-size:.85em;line-height:1.5}
+.pledge{margin:.2em 0 .8em;background:#fff6c8;border:.15em dashed #e0b84a;border-radius:.6em;padding:.6em 1em;transform:rotate(-.6deg);text-align:center}
+.pl1{color:#b0702e;font-size:.9em}.pl2{font-size:1.15em;margin:.2em 0}.pl3{font-size:.8em;color:var(--soft)}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:.6em}
+.sum .box{background:#fff;border-radius:.8em;padding:.4em .8em}
+.sum .full{grid-column:1/-1}
+.sum h3{margin:0;font-size:.8em;color:var(--soft)}
+
+/* 回饋：和對話框同一種木框樣式，出現在對話框的位置 */
+#fb{position:absolute;inset:0;background:rgba(40,30,30,.18);display:none;align-items:flex-end;justify-content:center;z-index:20}
+#fb.on{display:flex}
+#fb .in{position:relative;background:var(--paper);border:.25em solid var(--wood);border-radius:1.2em;width:52%;margin-bottom:2.2%;
+  padding:1.1em 1.3em .8em;box-shadow:0 .35em 0 rgba(0,0,0,.35);animation:rise .25s ease}
+#fb .tag{position:absolute;top:-1.15em;left:1em;color:#fff;padding:.05em .8em;border-radius:.6em;border:.15em solid var(--wood);font-size:.9em}
+#fb p{font-size:1.1em;line-height:1.55;margin:0 0 .5em}
+#fb .row{justify-content:flex-end;margin-top:0}
+@keyframes rise{from{transform:translateY(1em);opacity:0}}
+
+/* 呼吸 */
+#breath{position:absolute;inset:0;background:rgba(30,40,70,.62);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:15;color:#fff}
+#breath.on{display:flex}
+.bwrap{position:relative;width:17em;height:15em;display:flex;align-items:flex-end;justify-content:center}
+#circle{position:absolute;left:50%;top:50%;width:10em;height:10em;margin:-5em 0 0 -5em;border-radius:50%;
+  background:radial-gradient(circle,rgba(216,239,255,.85),rgba(79,143,217,.35) 70%,rgba(79,143,217,0));transition:transform 3s ease-in-out}
+#circle.big{transform:scale(1.6)}
+#bface{position:relative;width:13em;height:13em;transition:transform 3s ease-in-out;transform-origin:50% 100%}
+#bface img{width:100%;height:100%;object-fit:contain;object-position:bottom}
+#bface .e{font-size:7em;text-align:center}
+#bface.in{transform:scale(1.07) translateY(-2%)}
+#bstep{margin-top:.6em;background:var(--paper);color:var(--ink);border:.2em solid var(--wood);border-radius:2em;padding:.1em 1.4em;font-size:1.3em;min-width:6em;text-align:center}
+#bcnt{margin-top:.4em;font-size:1em}
+/* 轉場卡（回憶、回到現在、時光倒流） */
+#memo{position:absolute;inset:0;z-index:28;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff3dc;transition:opacity .5s}
+#memo.on{display:flex}
+#memo.sepia{background:radial-gradient(ellipse at center,rgba(130,92,55,.94),rgba(40,25,15,.98))}
+#memo.bright{background:radial-gradient(ellipse at center,rgba(255,248,234,.96),rgba(242,214,160,.98));color:var(--ink)}
+#memo .m1{font-size:1.7em;letter-spacing:.15em;opacity:0;transition:opacity .6s}
+#memo .mface{width:12em;height:12em;opacity:0;transform:translateX(3em);transition:all .7s}
+#memo .mface img{width:100%;height:100%;object-fit:contain}
+#memo .mface .e{font-size:7em;text-align:center}
+#memo .m2{font-size:1.5em;opacity:0;transition:opacity .6s;background:rgba(0,0,0,.25);padding:.1em 1.2em;border-radius:2em}
+#memo.bright .m2{background:var(--wood2);color:#fff}
+#memo .show{opacity:1;transform:none}
+@keyframes spin{to{transform:rotate(-360deg)}}
+#memo .spin{display:inline-block;animation:spin 1.2s linear infinite}
+
+/* 標題 */
+/* 標題畫面 */
+.tribbon{position:relative;z-index:2;background:#e2735a;color:#fff;padding:.2em 1.6em;border-radius:.4em;font-size:1em;letter-spacing:.12em;
+  box-shadow:0 .2em 0 #a8483a;margin-bottom:-.7em}
+.tribbon::before,.tribbon::after{content:"";position:absolute;top:.3em;width:1em;height:100%;background:#c85a45;z-index:-1}
+.tribbon::before{left:-.7em;transform:skewY(20deg)}
+.tribbon::after{right:-.7em;transform:skewY(-20deg)}
+.tboard{display:flex;align-items:flex-end;gap:.4em}
+.tcenter{position:relative;z-index:1;background:linear-gradient(#d69c66,#b07743);border:.3em solid #6b4226;border-radius:1.2em;padding:1.1em 2.2em .9em;text-align:center;
+  box-shadow:0 .45em 0 #4a2c18,inset 0 .25em 0 rgba(255,255,255,.25)}
+.tcenter::before,.tcenter::after{content:"";position:absolute;top:.6em;width:.55em;height:.55em;border-radius:50%;background:#6b4226;box-shadow:inset .1em .1em 0 rgba(255,255,255,.3)}
+.tcenter::before{left:.7em}.tcenter::after{right:.7em}
+.tp{width:10em;height:10em;filter:drop-shadow(0 .3em .2em rgba(0,0,0,.25))}
+.tp img{width:100%;height:100%;object-fit:contain;object-position:bottom}
+#tpl{transform:translateX(1.2em)}#tpr{transform:translateX(-1.2em)}
+.tsteps{display:flex;align-items:center;gap:.4em;margin:1em 0 .8em}
+.tsteps span{background:var(--paper);border:.18em solid var(--wood);border-radius:2em;padding:.15em .9em .15em .3em;font-size:1em}
+.tsteps b{display:inline-block;width:1.4em;height:1.4em;line-height:1.4em;text-align:center;border-radius:50%;background:var(--accent);color:#fff;margin-right:.35em;font-weight:400}
+.tsteps i{color:var(--wood);font-style:normal;font-size:1.2em}
+.btn.big{font-size:1.35em;padding:.4em 2.2em}
+.tmeta{margin-top:.7em;color:var(--wood);font-size:.9em}
+.tdeco{position:absolute;inset:0;pointer-events:none}
+.tdeco span{position:absolute;font-size:1.8em;animation:float 3.2s ease-in-out infinite;opacity:.9}
+.tdeco .ico{width:1.4em;height:1.4em}
+@keyframes float{50%{transform:translateY(-.4em) rotate(8deg)}}
+/* 海報範例 */
+.pwrap{display:flex;gap:1.4em;align-items:flex-start;justify-content:center}
+.poster{position:relative;flex:0 0 46%;background:#fffdf5;border:.12em solid #e8dcc4;border-radius:.3em;padding:.8em 1.1em .5em;transform:rotate(-1.5deg);
+  box-shadow:0 .3em .6em rgba(0,0,0,.18)}
+.tape{position:absolute;width:3.5em;height:1.1em;background:rgba(242,214,140,.75);top:-.5em}
+.tape.t1{left:-.6em;transform:rotate(-25deg)}.tape.t2{right:-.6em;transform:rotate(25deg)}
+.ptitle{font-size:1.1em;color:#d9534f;text-align:center;border-bottom:.15em dashed #f2a33a;padding-bottom:.3em;margin-bottom:.4em}
+.poster ol{margin:.2em 0 .4em 1.3em;padding:0;font-size:.85em;line-height:1.45}
+.poster ol li:nth-child(1){color:#3a78b8}.poster ol li:nth-child(2){color:#3fae6a}.poster ol li:nth-child(3){color:#b0702e}
+.part{height:5.2em;display:flex;align-items:center;justify-content:center;border-radius:.6em;background:#fff6e0}
+.part img{max-height:100%;max-width:100%}
+.pdeco{font-size:1.4em;letter-spacing:.15em;white-space:nowrap}.pdeco .ico{width:1.3em;height:1.3em}
+.psign{font-size:.8em;color:#999;margin-top:.4em;text-align:right}
+.pinfo{flex:1}
+.pinfo h3{margin:.1em 0 .4em;font-size:1em;color:var(--wood)}
+.need{margin:0 0 .6em;padding-left:1.2em;line-height:1.45;font-size:.92em;display:grid;grid-template-columns:1fr 1fr;column-gap:1.4em}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:.45em}
+.role{display:flex;gap:.5em;align-items:center;background:#fff;border:.15em solid #e2d5bd;border-radius:.7em;padding:.35em .5em}
+.role b{flex:none;width:1.6em;height:1.6em;line-height:1.6em;border-radius:50%;background:var(--accent);color:#fff;text-align:center;font-weight:400}
+.rn{font-size:.95em}.rd{font-size:.72em;color:var(--soft);line-height:1.3}
+/* 小任務裡的圖片 */
+#pic{position:absolute;top:12%;right:4%;width:24%;transform:rotate(3deg);background:#fff;padding:.5em .5em .3em;border-radius:.3em;
+  box-shadow:0 .4em .8em rgba(0,0,0,.3);z-index:6;display:none;animation:pop .35s}
+#pic.on{display:block}
+#pic .pimg svg,#pic .pimg img{display:block;width:100%;height:auto;border-radius:.2em}
+#pic .pcap{text-align:center;font-size:.8em;color:var(--soft);margin-top:.2em}
+#title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;
+  background:radial-gradient(ellipse at center,rgba(255,244,222,.9),rgba(255,226,170,.55) 75%)}
+#title h1{font-size:3.3em;margin:0;white-space:nowrap;color:#fff8ea;-webkit-text-stroke:.09em var(--wood);paint-order:stroke fill;text-shadow:0 .12em 0 #5c3a22;letter-spacing:.1em;font-weight:400}
+#title .sub{font-size:1.3em;color:#fff;background:var(--wood2);border:.15em solid var(--wood);border-radius:2em;padding:.1em 1em;margin:.5em 0 1em}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:25;transition:opacity .5s}
+#flashText{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:26;pointer-events:none;
+  font-size:2.4em;font-weight:400;color:var(--ink);opacity:0;transition:opacity .5s}
+#rotate{display:none}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="top">
+    <div class="tagbox" id="stageName"></div>
+    <div class="tagbox" id="stars"></div>
+    <div class="tagbox" id="hud">
+      <span class="meter">小明 <span class="bars" id="bm"></span></span>
+      <span class="meter">小華 <span class="bars" id="bh"></span></span>
+      <span id="hearts"></span>
+      <span id="badges"></span>
+    </div>
+    <div class="tagbox" id="mute">音效 開</div>
+  </div>
+  <div id="hint"></div>
+  <div class="portrait" id="pl"></div>
+  <div class="portrait" id="pr"></div>
+  <div id="dlg"><div id="name"></div><div id="txt"></div><div id="opts"></div><div id="more">▼</div></div>
+  <div id="menu"></div>
+  <div id="sheet"></div>
+  <div id="breath"><div class="bwrap"><div id="circle"></div><div id="bface"></div></div><div id="bstep">準備</div><div id="bcnt"></div></div>
+  <div id="pic"><i class="tape t1"></i><div class="pimg"></div><div class="pcap"></div></div>
+  <div id="memo"><div class="m1"></div><div class="mface"></div><div class="m2"></div></div>
+  <div id="fb"><div class="in"><div class="tag"></div><p></p><div class="row"><button class="btn"></button></div></div></div>
+  <div id="flash"></div><div id="flashText"></div>
+  <div id="title">
+    <div class="tdeco" id="tdeco"></div>
+    <div class="tribbon">綜合活動 × SEL｜社會情緒學習小遊戲</div>
+    <div class="tboard">
+      <div class="tp" id="tpl"></div>
+      <div class="tcenter"><h1>換個位置看看</h1><div class="sub">同一件事，兩種心情</div></div>
+      <div class="tp" id="tpr"></div>
+    </div>
+    <div class="tsteps"><span><b>1</b>走一走</span><i>›</i><span><b>2</b>聊一聊</span><i>›</i><span><b>3</b>換位想一想</span></div>
+    <button class="btn big" id="start" disabled>載入中……</button>
+    <div class="tmeta">五年級｜約 8 分鐘｜點畫面就能玩</div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   ✏️ 老師可以修改的區域：台詞、選項、回饋都在這裡
+   只改引號 " " 裡面的文字，引號和逗號不要刪掉。
+   ===================================================================== */
+const 台詞 = {
+  開場: [
+    ["旁白", "", "今天的綜合課，大家要分組做一張「班級約定海報」。"],
+    ["老師", "說明", "這次的主題是「我們這一班的好朋友約定」。每一組要想出 3 條讓大家相處更開心的約定，再畫成海報。"],
+    ["老師", "微笑", "老師先給大家看一張範例。"],
+  ],
+  海報範例: {
+    標題: "我們這一班的好朋友約定",
+    約定: ["說話前，先聽別人說完", "有人難過時，問一句「你還好嗎？」", "意見不同時，一起找兩個人都 OK 的辦法"],
+    要有: ["一個清楚的標題", "3 條約定", "插圖", "全組的簽名"],
+    分工: [["組長", "帶大家討論、分配工作"], ["寫字", "把約定寫清楚"], ["畫插圖", "讓海報更好看"], ["上台報告", "向全班介紹海報"]],
+  },
+  開場_海報後: [
+    ["老師", "說明", "每組 4 個人，剛好一人一個工作：組長、寫字、畫插圖、上台報告。"],
+    ["老師", "說明", "所以每組最多 4 個人，超過的組要重新分喔！"],
+    ["旁白", "", "等一下，你會用兩個人的眼睛，看同一件事。"],
+  ],
+  開場提示: "點地板走走看。頭上有「！」的同學可以點他聊天，準備好就去找阿杰（右上角）",
+  /* 支線小任務：第 1 關自由走動時，點頭上有「！」的同學就會觸發。不做也能直接去找阿杰。 */
+  支線: [
+    { 名稱: "搶彩色筆", 對象: 3, 站位: [272, 172],
+      劇情: [["小芸", "", "我先拿到紅色的！"], ["小宇", "", "可是標題要用紅色，我也要用啦！"]],
+      題目: "兩個人吵起來了，小明可以怎麼說？",
+      選項: [
+        { 字: "「你們可以輪流用，一人寫一半！」", 好: true, 回饋: "你幫他們找到兩個人都 OK 的辦法！" },
+        { 字: "「吵死了，安靜一點啦！」", 好: false,
+          反應: ["小芸", "", "哼！又不是我的錯！"],
+          換位: { 對象: "小芸", 問題: "如果你是正在吵架的小芸，被說「吵死了」，心裡會有什麼感覺？", 感受: ["更生氣", "委屈", "有點不好意思"] },
+          回饋: "被罵的時候，人通常不會冷靜下來，反而更想吵贏。",
+          後果: [["旁白", "", "兩個人吵得更兇了，誰都沒拿到紅色彩色筆。"]] },
+      ],
+      結尾: ["小芸", "", "好吧，那我先寫上半部，換你寫下半部！"] },
+    { 名稱: "畫壞的小鳥", 對象: 7, 站位: [272, 286], 圖片: "小鳥",
+      劇情: [["小安", "", "我畫的小鳥好醜……大家一定會笑我。"]],
+      題目: "小安看起來很沮喪，小明可以怎麼說？",
+      選項: [
+        { 字: "「我覺得很可愛，有你自己的風格！」", 好: true, 回饋: "你注意到小安的心情，還幫她打氣！" },
+        { 字: "「真的有點醜耶，哈哈！」", 好: false,
+          反應: ["小安", "", "……我果然畫不好。"],
+          換位: { 對象: "小安", 問題: "如果你是小安，聽到這句話，心裡會有什麼感覺？", 感受: ["難過", "丟臉", "不想再畫了"] },
+          回饋: "小安本來就擔心被笑，這句話剛好說中她最怕的事。",
+          後果: [["旁白", "", "小安把畫收了起來，不想再畫了。"]] },
+      ],
+      結尾: ["小安", "", "真的嗎？謝謝你！那我再多畫幾隻！"] },
+    { 名稱: "缺人的組", 對象: 8, 站位: [372, 262],
+      劇情: [["小晴", "", "我們這組只有兩個人，海報好難畫完喔……"]],
+      題目: "小明可以怎麼回應？",
+      選項: [
+        { 字: "「你們一定很辛苦。我幫你們問問看，有沒有人能加入！」", 好: true, 回饋: "你理解了她們的辛苦，這就是同理心！" },
+        { 字: "「那是你們的問題吧。」", 好: false,
+          反應: ["小晴", "", "……好吧。"],
+          換位: { 對象: "小晴", 問題: "如果你是小晴，聽到這句話，心裡會有什麼感覺？", 感受: ["失望", "孤單", "難過"] },
+          回饋: "小晴只是想有人懂她們的辛苦，這句話讓她覺得沒有人在乎。",
+          後果: [["旁白", "", "小晴低下頭，繼續兩個人慢慢畫。"]] },
+      ],
+      結尾: ["小晴", "", "謝謝你！有人願意關心我們，就很開心了！"] },
+  ],
+  第一關: [
+    ["小明", "開心", "阿杰在這一組耶！我也要加入你們！"],
+    ["小華", "著急", "不行啦，我們人滿了！"],
+    ["旁白", "", "小華頭也沒抬，說完就轉過身去。"],
+    ["旁白", "", "旁邊有人在笑……"],
+    ["小明", "尷尬", "……我站在原地，不知道該怎麼辦。"],
+  ],
+  回憶轉場: ["時間倒轉……回到剛剛", "這一次，你是小華"],
+  回到現在: ["回到現在", "這一次，換你幫小明想辦法"],
+  時光倒流轉場: ["時光倒流", "如果你是小華……"],
+  第二關提示: "你現在是小華。走到老師旁邊，聽聽老師剛剛說了什麼。",
+  第二關_老師: [
+    ["老師", "說明", "提醒大家，4 個人剛好分 4 個工作，所以每組最多 4 個人，超過的組要重新分喔！"],
+    ["小華", "緊張", "（我們已經 4 個人了……）"],
+    ["小華", "緊張", "（我是組長，如果我們組被拆散，大家一定會怪我……我好緊張。）"],
+  ],
+  第二關_小明來了: [
+    ["小明", "開心", "阿杰在這一組耶！我也要加入你們！"],
+    ["小華", "著急", "（糟了！）不行啦，我們人滿了！"],
+    ["小華", "為難", "（其實我也很想跟小明一組……可是我太急了，連解釋都忘了說。）"],
+  ],
+  第三關開場: [
+    ["旁白", "", "回到現在。小明退到教室中間，心裡亂糟糟的……"],
+  ],
+  走過去提示: "點地板，帶小明走到小華旁邊",
+  小華回應: ["小華", "抱歉", "啊，對不起！我不是不想跟你一組，是老師說超過 4 個人要重新分，我太緊張了才那樣說。"],
+  結局_問老師: [
+    ["小明", "放心", "老師，我們可以這一組 5 個人嗎？"],
+    ["老師", "微笑", "你們能一起來問，好棒！5 個人的話，可以多一個「美術設計」。這次就讓你們 5 個人一組吧！"],
+    ["小華", "微笑", "太好了！小明，海報的標題就交給你畫吧！"],
+  ],
+  結局_別組: [
+    ["同學", "歡迎", "歡迎歡迎！我們這組正好缺人！"],
+    ["小華", "微笑", "小明，下次分組，我們再同一組！"],
+    ["小明", "放心", "好！一言為定！"],
+  ],
+  同學閒聊: ["標題寫什麼？", "這個顏色好看！", "我來畫插圖！", "嗯……", "哈哈！", "♪", "換我畫！", "好漂亮！"],
+};
+
+const 任務 = {
+  小明感受: {
+    題目: "小明現在有什麼感受？（最多選 2 張）",
+    卡片: ["難過", "生氣", "尷尬", "失望", "開心", "無所謂"],
+    提示卡: { "開心": "再看看小明站在原地的樣子，還有旁邊的笑聲……你覺得{他P}真的不在意嗎？", "無所謂": "再看看小明站在原地的樣子，還有旁邊的笑聲……你覺得{他P}真的不在意嗎？" },
+    答對: "你注意到小明的心情了！被拒絕的時候，會有這種感覺很正常。",
+  },
+  性別_女: {
+    心裡話: "我好生氣……可是女生生氣，是不是很不乖？", 表情: "生氣",
+    題目: "你覺得呢？",
+    選項: [
+      ["女生也可以生氣", "沒錯！生氣是每個人都會有的感受，不分男生女生。好好說出來，別人才知道你在意什麼。"],
+      ["女生不應該生氣", "很多人都這樣想。但其實不管男生女生，都會生氣。把感受好好說出來，比悶在心裡好喔。"],
+    ],
+  },
+  性別: {
+    心裡話: "我眼睛有點酸酸的……可是男生哭很丟臉吧？",
+    題目: "你覺得呢？",
+    選項: [
+      ["男生也可以難過", "沒錯！難過是每個人都會有的感受，不分男生女生。說出來，別人才知道怎麼幫你。", "💙"],
+      ["男生不應該哭", "很多人都這樣想。但其實不管男生女生，都會難過。把感受藏起來，心裡會更不舒服喔。", "🤔"],
+    ],
+  },
+  溫度計: { 題目: "小明的感受有多強烈？點一點溫度計。", 標籤: ["一點點","有一點","普通","很強","非常強烈"] },
+  小明需求: { 題目: "小明心裡真正「想要」的是什麼？", 選項: ["想跟好朋友在一起","想被大家接納","想有一組可以加入"], 回饋: "感受的背後，常常藏著一個「想要」。" },
+  小華感受: {
+    題目: "小華當時有什麼感受？（最多選 2 張）",
+    卡片: ["緊張", "為難", "擔心", "生氣", "討厭小明", "得意"],
+    提示卡: {
+      "生氣": "小華有點急，但{他F}是在生小明的氣嗎？再想想{他F}心裡的話。",
+      "討厭小明": "小華說{他F}其實也想跟小明一組喔！看起來像拒絕，不一定是討厭。",
+      "得意": "小華說{他F}其實也想跟小明一組喔！看起來像拒絕，不一定是討厭。",
+    },
+    答對: "對！小華也有{他F}的壓力。",
+  },
+  小華需求: { 題目: "小華心裡「想要」的是什麼？", 選項: ["遵守老師的規定","不想讓組員被拆散","也不想讓小明難過"], 回饋: "你說得對！其實這三個，小華心裡都有。" },
+  做法: {
+    步驟: "步驟 1｜停",
+    題目: "被拒絕之後，小明可以怎麼做？",
+    選項: [
+      { 字: "大喊：「你們都排擠我！」然後跑走", 台詞: ["小明", "生氣", "你們都排擠我！"], 小明: +1, 小華: +1, 友誼: -1, 重來: true,
+        反應: ["小華", "為難", "（我又不是故意的……{他P}為什麼要這樣說我？）"],
+        換位: { 對象: "小華", 問題: "如果你是小華，突然被大聲說「排擠」，心裡會有什麼感覺？", 感受: ["委屈", "難過", "生氣", "嚇一跳"] },
+        回饋: "生氣是正常的，可是大喊之後，小華也很委屈，兩個人更難把話說清楚。",
+        後果: [["旁白", "", "小明跑出教室，小華也覺得很委屈，兩個人都悶悶不樂。"], ["旁白", "", "過了一會兒，小明發現問題還是沒有解決……{他P}決定先停下來，深呼吸。"]] },
+      { 字: "什麼都不說，自己坐到角落", 台詞: ["小明", "難過", "……"], 小明: +1, 小華: 0, 友誼: 0, 重來: true,
+        反應: ["小華", "平常", "（咦？小明去哪裡了？{他P}還好嗎？）"],
+        換位: { 對象: "小華", 問題: "如果你是小華，完全不知道小明在難過，會怎麼樣？", 感受: ["不知道發生什麼事", "有點擔心", "以為沒事了"] },
+        回饋: "小明把難過藏起來，小華就不知道{他P}需要幫忙，問題也還在。",
+        後果: [["旁白", "", "小明一個人坐在角落，越想越難過，小華卻什麼都不知道。"], ["旁白", "", "過了一會兒，小明想：「一直悶著也不是辦法……」{他P}決定先深呼吸，再去問清楚。"]] },
+      { 字: "先深呼吸三次，再走過去問", 小明: -1, 小華: 0, 友誼: 0, 徽章: ["停"], 呼吸: true, 回饋: "「停」：先讓自己冷靜下來，再處理問題！" },
+    ],
+  },
+  開口: {
+    步驟: "步驟 2、3｜想、說",
+    題目: "小明想一想之後，要怎麼說出自己的感受？",
+    選項: [
+      { 字: "「你為什麼不讓我加入？你很過分耶！」", 台詞: ["小明", "生氣", "你為什麼不讓我加入？你很過分耶！"], 小明: 0, 小華: +1, 友誼: -1, 重來: true,
+        反應: ["小華", "著急", "我、我又沒有那個意思！你幹嘛罵我？"],
+        換位: { 對象: "小華", 問題: "如果你是小華，突然被說「很過分」，心裡會有什麼感覺？", 感受: ["委屈", "生氣", "想保護自己", "難過"] },
+        回饋: "被指責的時候，人常常會先想保護自己，就比較聽不進去。",
+        後果: [["旁白", "", "兩個人都有點激動，氣氛僵住了。"], ["旁白", "", "小華深吸一口氣，決定還是把原因說清楚。"]] },
+      { 字: "「我剛剛有點難過。你們是不是不想跟我同組？」", 台詞: ["小明", "平靜", "我剛剛有點難過。你們是不是不想跟我同組？"], 小明: -1, 小華: -1, 友誼: +1, 徽章: ["想","說"], 回饋: "說出自己的感受，而不是罵人，對方比較聽得進去！" },
+    ],
+  },
+  辦法: {
+    步驟: "步驟 4｜找",
+    題目: "有什麼辦法，能讓兩個人都 OK？",
+    選項: [
+      { 字: "一起去問老師，能不能讓這組有 5 個人", 小明: -2, 小華: -2, 友誼: +2, 徽章: ["找"], 結局: "問老師", 回饋: "這個辦法同時照顧到小明「想跟朋友在一起」，和小華「想遵守規定」！" },
+      { 字: "小明先加入還缺人的組，下次分組再跟阿杰同組", 小明: -2, 小華: -2, 友誼: +2, 徽章: ["找"], 結局: "別組", 回饋: "這個辦法同時照顧到小明「想有組可以加入」，和小華「想遵守規定」！" },
+      { 字: "叫另一個組員離開，讓小明加入", 小明: 0, 小華: +1, 友誼: 0, 重來: true, 繼續: true,
+        反應: ["小玲", "", "為什麼要我走？我也很想待在這一組……"],
+        換位: { 對象: "被請走的小玲", 問題: "如果你是被請走的小玲，心裡會有什麼感覺？", 感受: ["難過", "覺得不公平", "被排擠"] },
+        回饋: "小明開心了，可是小玲變成那個被拒絕的人。",
+        後果: [["老師", "說明", "讓一個人離開、換另一個人加入，被請走的人也會難過喔。你們再想想，有沒有大家都 OK 的辦法？"]] },
+      { 字: "算了，小明自己做", 小明: +1, 小華: 0, 友誼: 0, 重來: true, 繼續: true,
+        反應: ["小明", "難過", "（……其實我還是很想跟大家一起做。）"],
+        換位: { 對象: "小明", 問題: "如果你是小明，一個人做海報，心裡會有什麼感覺？", 感受: ["孤單", "失望", "有點輕鬆", "難過"] },
+        回饋: "這樣小華不用煩惱了，可是小明想跟朋友在一起的心願被忽略了。",
+        後果: [["老師", "說明", "一個人做好辛苦喔。你們再想想看，有沒有讓小明和小華都 OK 的辦法？"]] },
+    ],
+  },
+  換你當組長: {
+    題目: "時光倒流回到一開始。如果你是小華，你會怎麼回答小明？",
+    選項: [
+      { 字: "「不行啦，我們人滿了！」", 好: false,
+        反應: ["小明", "難過", "……（原來他們不想要我。）"],
+        換位: { 對象: "小明", 問題: "如果你是小明，聽到「人滿了」卻不知道原因，心裡會有什麼感覺？", 感受: ["被拒絕", "難過", "尷尬", "想知道為什麼"] },
+        回饋: "只說「不行」，對方不知道原因，就很容易誤會。",
+        後果: [["旁白", "", "小明還是誤會了。原來，說出「原因」這麼重要。"]] },
+      { 字: "「對不起，老師規定最多 4 人，我不是不想跟你同組喔！我們一起去問老師好嗎？」", 好: true, 回饋: "說出原因，對方就不會誤會了！你獲得了「換位思考之星」！" },
+    ],
+  },
+  反思: { 題目: "下次我和同學意見不同的時候，我會先……", 選項: ["停下來深呼吸","想想他可能是怎麼想的","說出我的感受，而不是罵人","找一個兩個人都 OK 的辦法"] },
+};
+
+/* 圖片素材位置（AI 生成的圖處理後放這裡；找不到就自動用暫代圖） */
+const 素材 = {
+  地圖: "遊戲素材/教室地圖.png",
+  走路: { 小明: "遊戲素材/sprites/小明_走路.png", 小華: "遊戲素材/sprites/小華_走路.png" },
+  走路女: { 小明: "遊戲素材/sprites/主角女_走路.png", 小華: "遊戲素材/sprites/組長女_走路.png" },   // 選女生時使用
+  同學老師: "遊戲素材/sprites/同學老師.png",
+  同學動作: "遊戲素材/sprites/同學動作.png",   // 4 列 x 4 欄：寫字、舉手、說話、大笑
+  老師走路: "遊戲素材/sprites/老師_走路.png",
+  圖示: "遊戲素材/sprites/圖示.png",           // 4 x 4：情緒臉、愛心、星星、喇叭
+  海報插圖: "遊戲素材/sprites/海報插圖.png",   // 海報範例上的插圖（沒有就用像素圖示代替）
+  小鳥: "遊戲素材/sprites/小鳥塗鴉.png",               // 小任務「畫壞的小鳥」裡小安的畫（沒有就用程式畫的）
+  頭像: "遊戲素材/頭像/",   // 例如 遊戲素材/頭像/小明_1.png
+};
+const 表情 = {
+  小明: { 開心:[1,"😄"], 難過:[2,"😢"], 生氣:[3,"😠"], 尷尬:[4,"😳"], 平靜:[5,"😌"], 放心:[6,"🙂"] },
+  小華: { 平常:[1,"😐"], 著急:[2,"😣"], 緊張:[3,"😰"], 為難:[4,"😕"], 抱歉:[5,"🙇"], 微笑:[6,"😊"] },
+  老師: { 微笑:[1,""], 說明:[2,""] },   // 圖檔：遊戲素材/頭像/配角_1.png、配角_2.png
+  同學: { 歡迎:[3,""] },                // 圖檔：遊戲素材/頭像/配角_3.png
+};
+const 頭像檔名 = { 老師: "配角", 同學: "配角", 主角女: "主角女", 組長女: "組長女" };
+/* 角色設定：學生在開始前輸入。程式內部仍用「小明」「小華」，顯示時自動換成學生取的名字 */
+const 角色設定 = {
+  主角預設: "小明", 組長預設: "小華", 名字最多字數: 4,
+  稱號範例: ["班長小虎", "阿寶", "小樂", "星星"],
+  提醒: "請自己取一個稱號，不要用班上同學的真實名字喔！",
+};
+const CFG = { p: { name: "小明", g: "男" }, f: { name: "小華", g: "男" } };
+// 把劇本裡的「小明」「小華」換成學生取的名字，{他P}／{他F} 依性別換成他或她
+function tx(str) {
+  return String(str).replaceAll("小明", "\u0001").replaceAll("小華", "\u0002")
+    .replaceAll("\u0001", CFG.p.name).replaceAll("\u0002", CFG.f.name)
+    .replaceAll("{他P}", CFG.p.g === "女" ? "她" : "他").replaceAll("{他F}", CFG.f.g === "女" ? "她" : "他");
+}
+/* 圖示表裡每個圖示的位置（第幾格，從 0 開始），以及沒有圖示時的顏色 */
+const 圖示 = {
+  難過: [0, "#5b8fd6"], 生氣: [1, "#e2574c"], 尷尬: [2, "#f08a8a"], 失望: [3, "#8a8fb8"],
+  開心: [4, "#f2c94c"], 無所謂: [5, "#b0a89a"], 緊張: [6, "#7fb6c9"], 為難: [7, "#c99a6b"],
+  擔心: [8, "#9a8fd1"], 討厭小明: [9, "#a0743f"], 得意: [10, "#e8a33a"],
+  愛心: [11], 空心: [12], 星星: [13], 喇叭: [14], 靜音: [15],
+};
+/* ===================== 以下是程式，一般不需要修改 ===================== */
+
+const W = 640, H = 360, SCALE = 2;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+cv.width = W * SCALE; cv.height = H * SCALE;
+const $ = id => document.getElementById(id);
+const stage = $("stage");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* ---------- 音效 ---------- */
+let muted = false, ac;
+function tone(fs, dur = .12, type = "sine", gap = .09, vol = .16) {
+  if (muted) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    fs.forEach((f, i) => {
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * gap;
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + .02);
+    });
+  } catch (e) {}
+}
+/* ---------- 背景音樂 ----------
+   旋律為本遊戲原創，由瀏覽器即時合成，不使用任何現成歌曲。
+   每格是一個八分音符；"." 代表休息。和弦每小節一個。 */
+const 背景音樂 = {
+  音量: 0.07,   // 0 ～ 0.2，數字越大越大聲
+  教室: { 速度: 96, 和弦: ["C", "Am", "F", "G", "C", "Am", "F", "G"], 旋律: [
+    "E5 . G5 . C6 . G5 .", "A5 . G5 E5 . . C5 .", "F5 . A5 . C6 . A5 .", "G5 . . F5 E5 . D5 .",
+    "E5 . G5 . C6 . E6 .", "D6 . C6 A5 . . E5 .", "F5 . A5 G5 F5 . E5 D5", "C5 . E5 . C5 . . ."] },
+  回憶: { 速度: 70, 和弦: ["Am", "F", "C", "G", "Am", "F", "Dm", "E"], 旋律: [
+    "A4 . . C5 E5 . . .", "F5 . E5 . C5 . . .", "E5 . . G5 . . E5 .", "D5 . . . B4 . . .",
+    "A4 . C5 . E5 . A5 .", "G5 . F5 . . . C5 .", "D5 . . F5 . . A4 .", "G#4 . . . . . . ."] },
+  呼吸: { 速度: 60, 和弦: ["C", "Am", "F", "C"], 旋律: [". . . . . . . .", ". . . . . . . .", ". . . . . . . .", ". . . . . . . ."] },
+};
+const CHORD = { C: ["C3", "E3", "G3"], Am: ["A2", "C3", "E3"], F: ["F2", "A2", "C3"], G: ["G2", "B2", "D3"], Dm: ["D3", "F3", "A3"], E: ["E3", "G#3", "B3"] };
+const NOTE_I = { C: 0, "C#": 1, D: 2, "D#": 3, E: 4, F: 5, "F#": 6, G: 7, "G#": 8, A: 9, "A#": 10, B: 11 };
+const n2f = n => { const m = n.match(/^([A-G]#?)(\d)$/); return 440 * Math.pow(2, (NOTE_I[m[1]] + (+m[2] + 1) * 12 - 69) / 12); };
+const bgm = { mode: null, gain: null, timer: null, step: 0, next: 0 };
+function bgmInit() {
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+  if (!bgm.gain) { bgm.gain = ac.createGain(); bgm.gain.gain.value = 0; bgm.gain.connect(ac.destination); }
+}
+function bgmNote(f, t, dur, type, vol) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + (type === "sine" && dur > 1 ? .4 : .01));
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(bgm.gain); o.start(t); o.stop(t + dur + .05);
+}
+function bgmTick() {
+  const S = 背景音樂[bgm.mode]; if (!S) return;
+  const eighth = 60 / S.速度 / 2, bars = S.旋律.map(b => b.split(" "));
+  while (bgm.next < ac.currentTime + .3) {
+    const bar = Math.floor(bgm.step / 8) % bars.length, i = bgm.step % 8, t = bgm.next;
+    const n = bars[bar][i];
+    if (n && n !== ".") {      // 音樂盒：主音加一點高八度泛音
+      const f = n2f(n), soft = bgm.mode === "回憶";
+      bgmNote(f, t, soft ? 1.4 : .9, "sine", soft ? .5 : .6);
+      bgmNote(f * 2, t, .35, "triangle", soft ? .05 : .09);
+    }
+    if (i === 0) {             // 每小節：柔和和聲＋低音
+      const c = CHORD[S.和弦[bar % S.和弦.length]], barLen = eighth * 8;
+      c.forEach(x => bgmNote(n2f(x) * 2, t, barLen * .95, "sine", .12));
+      bgmNote(n2f(c[0]), t, barLen * .45, "triangle", .22);
+    }
+    if (i === 4 && bgm.mode !== "呼吸") bgmNote(n2f(CHORD[S.和弦[bar % S.和弦.length]][0]), t, eighth * 3.5, "triangle", .16);
+    bgm.next += eighth; bgm.step++;
+  }
+}
+function setMusic(mode) {
+  try {
+    bgmInit();
+    if (ac.state === "suspended") ac.resume();
+    if (bgm.mode === mode) return;
+    const now = ac.currentTime, target = muted ? 0 : 背景音樂.音量;
+    bgm.gain.gain.cancelScheduledValues(now);
+    bgm.gain.gain.setValueAtTime(bgm.gain.gain.value, now);
+    bgm.gain.gain.linearRampToValueAtTime(0, now + .6);       // 淡出舊的
+    setTimeout(() => {
+      bgm.mode = mode; bgm.step = 0; bgm.next = ac.currentTime + .05;
+      const t = ac.currentTime;
+      bgm.gain.gain.cancelScheduledValues(t); bgm.gain.gain.setValueAtTime(0, t);
+      bgm.gain.gain.linearRampToValueAtTime(muted ? 0 : 背景音樂.音量, t + 1.2);   // 淡入新的
+      if (!bgm.timer) bgm.timer = setInterval(bgmTick, 100);
+    }, 650);
+  } catch (e) {}
+}
+function applyMute() { if (bgm.gain && ac) { const t = ac.currentTime; bgm.gain.gain.cancelScheduledValues(t); bgm.gain.gain.setTargetAtTime(muted ? 0 : 背景音樂.音量, t, .15); } }
+document.addEventListener("visibilitychange", () => { if (!ac) return; document.hidden ? ac.suspend() : ac.resume(); });
+
+const sfx = {
+  tap: () => tone([660], .06), blip: () => tone([880], .03, "square", 0, .03),
+  good: () => tone([523, 659, 784]), hmm: () => tone([392, 330], .16, "triangle", .14),
+  badge: () => tone([784, 988, 1175, 1568], .14, "sine", .08), step: () => tone([180], .04, "triangle", 0, .05),
+};
+function icon(name) {
+  const d = 圖示[name]; if (!IMG.icons || !d) return "";
+  const i = d[0], c = i % 4, r = Math.floor(i / 4);
+  return `<i class="ico" style="background-image:url('${IMG.icons.src}');background-position:${c * 100 / 3}% ${r * 100 / 3}%"></i>`;
+}
+function paintMute() { $("mute").innerHTML = IMG.icons ? icon(muted ? "靜音" : "喇叭") : (muted ? "音效 關" : "音效 開"); }
+$("mute").onclick = () => { muted = !muted; paintMute(); applyMute(); };
+function heartsHTML(n) {
+  if (IMG.icons) return icon("愛心").repeat(n) + icon("空心").repeat(5 - n);
+  return '<span class="hrt">♥\uFE0E</span>'.repeat(n) + '<span class="hrt off">♥\uFE0E</span>'.repeat(5 - n);
+}
+
+/* ---------- 載入圖片（找不到就用暫代） ---------- */
+const IMG = {};
+const loadImg = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+async function loadAll() {
+  IMG.map = await loadImg(素材.地圖);
+  IMG.小明 = await loadImg(素材.走路.小明);
+  IMG.小華 = await loadImg(素材.走路.小華);
+  IMG.npc = await loadImg(素材.同學老師);
+  IMG.act = await loadImg(素材.同學動作);
+  IMG.teacherWalk = await loadImg(素材.老師走路);
+  IMG.icons = await loadImg(素材.圖示);
+  IMG.posterArt = await loadImg(素材.海報插圖);
+  IMG.bird = await loadImg(素材.小鳥);
+  IMG.girl_小明 = await loadImg(素材.走路女.小明);
+  IMG.girl_小華 = await loadImg(素材.走路女.小華);
+  for (const who of ["主角女", "組長女"]) for (const n of [1, 2, 3, 4, 5, 6]) IMG[`p_${who}_${n}`] = await loadImg(`${素材.頭像}${who}_${n}.png`);
+  for (const who in 表情) for (const [n] of Object.values(表情[who])) IMG[`p_${who}_${n}`] = await loadImg(`${素材.頭像}${頭像檔名[who] || who}_${n}.png`);
+}
+
+/* ---------- 教室場景（暫代：程式畫的像素教室） ---------- */
+/* 桌子、家具、牆的位置（對應 AI 生成的 教室地圖.png，地圖座標 640 x 360） */
+// 範圍包含桌子和前後兩排椅子，角色不會再穿過椅子
+const TABLES = { T1: { x: 134, y: 114, w: 118, h: 94 }, T2: { x: 391, y: 114, w: 120, h: 94 }, T3: { x: 134, y: 226, w: 118, h: 97 }, T4: { x: 391, y: 226, w: 120, h: 97 } };
+const BLOCKS = [...Object.values(TABLES),
+  { x: 283, y: 72, w: 77, h: 46 },   // 講桌
+  { x: 48, y: 20, w: 136, h: 78 },   // 左上書櫃
+  { x: 462, y: 40, w: 110, h: 56 },  // 右上抽屜櫃
+  { x: 0, y: 120, w: 58, h: 135 },   // 左邊置物櫃
+];
+const BOUND = { x0: 14, x1: 600, y0: 90, y1: 352 };
+const rightWall = y => 566 + (y - 80) * 0.2;  // 右邊窗戶那面牆是斜的
+let mapCanvas;
+function px(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+function buildMap() {
+  mapCanvas = document.createElement("canvas"); mapCanvas.width = W; mapCanvas.height = H;
+  const c = mapCanvas.getContext("2d");
+  // 地板
+  for (let y = 70; y < H; y += 10) for (let x = 0; x < W; x += 40) {
+    const off = (y / 10) % 2 ? 20 : 0;
+    px(c, x - off, y, 40, 10, ((x + y) / 10) % 3 ? "#e8c897" : "#e2c08c");
+    px(c, x - off, y + 9, 40, 1, "#cfa874"); px(c, x - off + 39, y, 1, 10, "#d4ae7c");
+  }
+  // 牆
+  px(c, 0, 0, W, 70, "#f3ead8"); px(c, 0, 58, W, 12, "#c99a6b"); px(c, 0, 68, W, 2, "#8a5a3b");
+  // 黑板
+  px(c, 196, 10, 248, 46, "#6b4a32"); px(c, 200, 13, 240, 38, "#2f6b4f"); px(c, 200, 13, 240, 2, "#3f8463");
+  px(c, 204, 51, 232, 4, "#8a5a3b"); px(c, 230, 50, 10, 2, "#fff"); px(c, 250, 50, 8, 2, "#f6e27a");
+  // 公布欄、時鐘
+  px(c, 40, 16, 110, 34, "#b98557"); px(c, 43, 19, 104, 28, "#d9c19b");
+  [[48, 22, "#f7a8a8"], [80, 24, "#a8d8f7"], [112, 21, "#f7e3a8"]].forEach(([x, y, col]) => { px(c, x, y, 26, 20, col); px(c, x + 11, y - 1, 3, 3, "#d33"); });
+  px(c, 520, 18, 26, 26, "#8a5a3b"); px(c, 523, 21, 20, 20, "#fff"); px(c, 532, 24, 2, 9, "#333"); px(c, 532, 31, 7, 2, "#333");
+  // 右邊窗戶
+  for (let y = 96; y < 340; y += 64) { px(c, 618, y, 22, 48, "#8a5a3b"); px(c, 621, y + 3, 16, 42, "#bfe6ff"); px(c, 628, y + 3, 2, 42, "#8a5a3b"); px(c, 560, y + 4, 56, 40, "rgba(255,240,180,.18)"); }
+  px(c, 612, 70, 4, H, "#c99a6b");
+  // 左牆與門
+  px(c, 0, 70, 6, H, "#c99a6b"); px(c, 0, 296, 14, 60, "#6b4a32"); px(c, 2, 300, 10, 54, "#9c6b45");
+  // 講桌
+  px(c, 276, 84, 88, 22, "#7a4e30"); px(c, 278, 82, 84, 18, "#a8724a"); px(c, 290, 86, 22, 10, "#f4f0e6"); px(c, 320, 86, 8, 10, "#d94f4f");
+  // 分組桌
+  const mk = ["#e2574c", "#4f8fd9", "#3fae6a", "#f2c94c", "#8e6bd1"];
+  Object.values(TABLES).forEach((t, k) => {
+    // 椅子
+    [[t.x + 12, t.y - 12], [t.x + 64, t.y - 12], [t.x + 12, t.y + t.h + 2], [t.x + 64, t.y + t.h + 2]].forEach(([x, y]) => { px(c, x, y, 20, 10, "#6f8fb3"); px(c, x, y + 8, 20, 2, "#4f6b8a"); });
+    px(c, t.x, t.y + 4, t.w, t.h, "#8a5a3b"); px(c, t.x, t.y, t.w, t.h - 2, "#c9925f"); px(c, t.x + t.w / 2 - 1, t.y, 2, t.h - 2, "#a8724a");
+    px(c, t.x + 14, t.y + 5, 68, 26, "#fffdf6"); px(c, t.x + 20, t.y + 10, 30, 4, mk[k % 5]); px(c, t.x + 20, t.y + 18, 46, 3, "#ccc"); px(c, t.x + 20, t.y + 24, 38, 3, "#ccc");
+    for (let i = 0; i < 4; i++) px(c, t.x + 4 + i * 3, t.y + 30, 2, 6, mk[(i + k) % 5]);
+  });
+}
+
+/* ---------- 角色 ---------- */
+const LOOK = {
+  小明: { hair: "#232323", style: "short" }, 小華: { hair: "#5a3a26", style: "bangs", band: "#3fae6a" },
+  阿杰: { hair: "#2b2b2b", style: "spiky" }, 馬尾: { hair: "#3a2a1e", style: "pony" }, 眼鏡: { hair: "#2a2a2a", style: "short", glasses: 1 },
+  短髮: { hair: "#4a3020", style: "bob", clip: "#f2c94c" }, 老師: { hair: "#4a2e1e", style: "long", shirt: "#bfe3c4", pants: "#d8c7a5", skirt: 1 },
+};
+const NPC_IDX = { 阿杰: 0, 馬尾: 1, 眼鏡: 2, 短髮: 3, 老師: 4 };
+function ent(name, x, y, dir = "down", look = name) { return { name, x, y, dir, look, tx: null, ty: null, frame: 1, t: 0, speed: 85, emote: null, emoteT: 0, visible: true, phase: Math.random() * 6.28, act: 0, actT: 0 }; }
+const SPR = 0.86;                                   // 角色顯示比例
+const ACT_ROW = { 阿杰: 0, 馬尾: 1, 眼鏡: 2, 短髮: 3 }; // 同學動作圖的列
+/* 站位：同學站在桌子後方和左右兩側，桌子前方的椅子空著 */
+const POS = { 小明門口: [62, 334], 小華座位: [379, 162], 老師: [268, 110] };
+const E = {
+  小明: ent("小明", ...POS.小明門口, "right"),
+  小華: ent("小華", ...POS.小華座位, "right"),
+  老師: ent("老師", ...POS.老師, "down"),
+  阿杰: ent("阿杰", 477, 112, "down"),
+  組員1: ent("組員1", 423, 112, "down", "馬尾"),
+  組員2: ent("組員2", 523, 162, "left", "眼鏡"),
+};
+Object.values(E).forEach(e => e.main = true);
+E.老師.speed = 45;
+const EXTRA = [
+  ["短髮", 166, 112, "down"], ["眼鏡", 219, 112, "down"], ["馬尾", 122, 160, "right"], ["阿杰", 264, 160, "left"],
+  ["馬尾", 166, 226, "down"], ["短髮", 219, 226, "down"], ["眼鏡", 122, 272, "right"], ["短髮", 264, 272, "left"],
+  ["短髮", 423, 226, "down"], ["眼鏡", 477, 226, "down"],   // 右下這組只有 2 個人（缺人的組）
+].map(([l, x, y, d], i) => ent("npc" + i, x, y, d, l));
+const DIRS = ["down", "left", "right", "up"];
+
+function drawChibi(c, e) {
+  const L = LOOK[e.look] || LOOK.小明, x = Math.round(e.x), y = Math.round(e.y), d = e.dir;
+  const walk = e.tx != null ? [0, 1, 2, 1][e.frame % 4] : 1, lift = walk === 0 ? -2 : walk === 2 ? 2 : 0;
+  const skin = "#f3c9a0", O = "#3b2a22", shirt = L.shirt || "#ffffff", pants = L.pants || "#2b3a67";
+  px(c, x - 9, y - 2, 18, 4, "rgba(0,0,0,.18)");
+  // 腳
+  if (!L.skirt) { px(c, x - 6, y - 9 + Math.min(0, lift), 5, 9, O); px(c, x + 1, y - 9 - Math.max(0, lift), 5, 9, O); px(c, x - 5, y - 9 + Math.min(0, lift), 3, 6, pants); px(c, x + 2, y - 9 - Math.max(0, lift), 3, 6, pants); }
+  else { px(c, x - 5, y - 4, 3, 4, O); px(c, x + 2, y - 4, 3, 4, O); }
+  // 身體
+  px(c, x - 9, y - 25, 18, 17 + (L.skirt ? 4 : 0), O);
+  px(c, x - 8, y - 24, 16, 9, shirt); px(c, x - 8, y - 15, 16, 6 + (L.skirt ? 4 : 0), L.skirt ? pants : pants);
+  if (d === "down") px(c, x - 3, y - 24, 6, 2, "#2b3a67");
+  if (L.band && d !== "right") px(c, x - 9, y - 22, 3, 3, L.band);
+  // 手
+  const sw = e.tx != null ? lift : 0;
+  if (d !== "right") px(c, x - 11, y - 22 + sw, 3, 8, skin);
+  if (d !== "left") px(c, x + 8, y - 22 - sw, 3, 8, skin);
+  // 頭
+  px(c, x - 11, y - 45, 22, 21, O); px(c, x - 10, y - 44, 20, 19, skin);
+  // 頭髮
+  const hc = L.hair;
+  px(c, x - 11, y - 46, 22, 7, hc);
+  if (d === "up") px(c, x - 11, y - 46, 22, 19, hc);
+  else {
+    if (d !== "right") px(c, x - 11, y - 44, 3, 9 + (L.style === "long" || L.style === "bob" ? 8 : 0), hc);
+    if (d !== "left") px(c, x + 8, y - 44, 3, 9 + (L.style === "long" || L.style === "bob" ? 8 : 0), hc);
+    if (L.style === "bangs") px(c, x - 9, y - 40, 18, 4, hc);
+    if (L.style === "spiky") { px(c, x - 8, y - 49, 3, 3, hc); px(c, x - 1, y - 50, 3, 4, hc); px(c, x + 5, y - 49, 3, 3, hc); }
+    if (L.style === "short") px(c, x - 1, y - 49, 3, 3, hc);
+  }
+  if (L.style === "pony") px(c, d === "left" ? x + 9 : x - 13, y - 42, 4, 12, hc);
+  if (L.style === "long") { px(c, x - 12, y - 30, 4, 10, hc); px(c, x + 8, y - 30, 4, 10, hc); }
+  if (L.clip && d !== "up") px(c, x + 4, y - 42, 4, 2, L.clip);
+  // 臉
+  if (d !== "up") {
+    const ex = d === "down" ? [x - 6, x + 3] : d === "left" ? [x - 8, x - 2] : [x + 1, x + 6];
+    ex.forEach(xx => { px(c, xx, y - 35, 3, 4, "#2a2020"); px(c, xx, y - 35, 1, 1, "#fff"); });
+    if (L.glasses) ex.forEach(xx => { c.strokeStyle = "#555"; c.lineWidth = 1; c.strokeRect(xx - 1.5, y - 36.5, 6, 6); });
+    px(c, d === "down" ? x - 9 : d === "left" ? x - 10 : x + 6, y - 30, 3, 2, "rgba(240,120,120,.5)");
+    if (d === "down") px(c, x - 2, y - 28, 4, 1, "#a0524a");
+  }
+}
+function drawSprite(c, e, now) {
+  const isMain = e.name === "小明" || e.name === "小華", isTeacher = e.look === "老師";
+  let sheet = null, sx = 0, sy = 0, fw = 0, fh = 0, walking = false;
+  const grid4 = img => { sheet = img; fw = img.width / 4; fh = img.height / 4; sx = (e.tx != null ? e.frame % 4 : 1) * fw; sy = DIRS.indexOf(e.dir) * fh; walking = true; };
+  if (isMain) { if (IMG[e.name]) grid4(IMG[e.name]); }
+  else if (isTeacher && IMG.teacherWalk) grid4(IMG.teacherWalk);
+  else if (!isTeacher && IMG.act && ACT_ROW[e.look] != null) { sheet = IMG.act; fw = sheet.width / 4; fh = sheet.height / 4; sx = (e.act || 0) * fw; sy = ACT_ROW[e.look] * fh; }
+  else if (IMG.npc && NPC_IDX[e.look] != null) { sheet = IMG.npc; fw = sheet.width / 5; fh = sheet.height; sx = NPC_IDX[e.look] * fw; }
+  if (!sheet) { drawChibi(c, e); return; }
+  // 呼吸起伏；沒有走路動畫的角色移動時用小跳步代替
+  let bob = 0;
+  if (e.tx != null && !walking) bob = -Math.abs(Math.round(Math.sin(now / 90) * 2));
+  else if (e.tx == null && !isMain) bob = Math.round(Math.sin(now / 520 + e.phase) * .9);
+  const dw = Math.round(fw * SPR), dh = Math.round(fh * SPR);
+  px(c, e.x - 8, e.y - 2, 16, 3, "rgba(0,0,0,.18)");
+  c.drawImage(sheet, sx, sy, fw, fh, Math.round(e.x - dw / 2), Math.round(e.y - dh + 2 + bob), dw, dh);
+}
+/* 同學的小動作：寫字、舉手、說話、大笑，學生自由走動時偶爾冒出閒聊泡泡 */
+function npcIdle(now) {
+  for (const e of [...Object.values(E), ...EXTRA]) {
+    if (e.name === "小明" || e.name === "小華" || e.look === "老師" || now < e.actT) continue;
+    const r = Math.random();
+    e.act = r < .55 ? 0 : r < .7 ? 1 : r < .9 ? 2 : 3;
+    e.actT = now + 1800 + Math.random() * 2600;
+    if (control && e.act === 2 && !e.emote && Math.random() < .5) {
+      const L = 台詞.同學閒聊; emote(e, L[Math.floor(Math.random() * L.length)], 1800);
+    }
+  }
+}
+function drawEmote(c, e) {
+  if (!e.emote || performance.now() > e.emoteT) { e.emote = null; return; }
+  const bx = e.x, by = e.y - 54 + Math.sin(performance.now() / 150) * 1.5;
+  c.font = "11px Huninn,'Microsoft JhengHei',sans-serif"; c.textAlign = "center"; c.textBaseline = "middle";
+  const w = Math.max(18, c.measureText(e.emote).width + 10);
+  c.fillStyle = "#fff"; c.strokeStyle = "#3b2f2a"; c.lineWidth = 1.5;
+  c.beginPath(); c.roundRect(bx - w / 2, by - 9, w, 18, 6); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(bx - 3, by + 9); c.lineTo(bx, by + 14); c.lineTo(bx + 3, by + 9); c.fill();
+  c.fillStyle = "#3b2f2a"; c.fillText(e.emote, bx, by + 1);
+}
+function emote(e, text, ms = 2200) {
+  e.emote = text; e.emoteT = performance.now() + ms;
+  if (/嘻|哈/.test(text)) { e.act = 3; e.actT = e.emoteT; } else if (!e.main || e.name === "阿杰") { e.act = 2; e.actT = e.emoteT; }
+}
+
+/* ---------- 移動與碰撞 ---------- */
+const leftWall = y => 52 - (y - 107) * 0.26;   // 左邊的牆也是斜的
+// 其他同學站的位置也不能穿過（老師會走動，不算在內）
+const npcBlock = (x, y) => [...Object.values(E), ...EXTRA].some(e => e !== player && e.look !== "老師" && e.visible && e.tx == null &&
+  Math.abs(e.x - x) < 10 && y > e.y - 7 && y < e.y + 6);
+const hit = (x, y) => x < Math.max(BOUND.x0, leftWall(y)) || x > Math.min(BOUND.x1, rightWall(y)) || y < BOUND.y0 || y > BOUND.y1 ||
+  BLOCKS.some(b => x > b.x - 7 && x < b.x + b.w + 7 && y > b.y - 2 && y < b.y + b.h + 8) || npcBlock(x, y);
+const others = me => [...Object.values(E), ...EXTRA].filter(o => o !== me && o.visible);
+function update(dt) {
+  for (const e of [...Object.values(E), ...EXTRA]) {
+    if (e.tx == null) continue;
+    const dx = e.tx - e.x, dy = e.ty - e.y, dist = Math.hypot(dx, dy);
+    if (dist < 2) {
+      if (e.path && e.path.length) { [e.tx, e.ty] = e.path.shift(); continue; }
+      e.tx = e.ty = null; e.onArrive && e.onArrive(); continue;
+    }
+    const s = Math.min(dist, e.speed * dt), nx = e.x + dx / dist * s, ny = e.y + dy / dist * s;
+    const blockedByPeople = (x, y) => e.solid && others(e).some(o => Math.hypot(o.x - x, (o.y - y) * 1.6) < 14);
+    const ok = (x, y) => (e.ghost || !hit(x, y)) && !blockedByPeople(x, y);
+    if (ok(nx, ny)) { e.x = nx; e.y = ny; }
+    else if (ok(nx, e.y)) e.x = nx;
+    else if (ok(e.x, ny)) e.y = ny;
+    else { e.tx = e.ty = null; e.onArrive && e.onArrive(); continue; }
+    e.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+    e.t += dt; if (e.t > .14) { e.t = 0; e.frame++; if (e.frame % 2 === 0) sfx.step(); }
+  }
+}
+/* 尋路（A*）：點到桌子另一邊也會自己繞過去 */
+function findPath(sx, sy, tx, ty) {
+  const G = 8, C = Math.ceil(W / G), R = Math.ceil(H / G), id = (c, r) => r * C + c;
+  const free = (c, r) => c >= 0 && r >= 0 && c < C && r < R && !hit(c * G + 4, r * G + 4);
+  const s = [Math.floor(sx / G), Math.floor(sy / G)], t = [Math.floor(tx / G), Math.floor(ty / G)];
+  if (!free(...t)) return null;
+  const open = [[0, ...s]], g = new Map([[id(...s), 0]]), from = new Map(), seen = new Set();
+  while (open.length) {
+    open.sort((a, b) => a[0] - b[0]);
+    const [, c, r] = open.shift(), k = id(c, r);
+    if (seen.has(k)) continue; seen.add(k);
+    if (c === t[0] && r === t[1]) {
+      const pts = []; let q = k;
+      while (from.has(q)) { pts.unshift([(q % C) * G + 4, Math.floor(q / C) * G + 4]); q = from.get(q); }
+      // 去掉同方向的中間點
+      const out = []; for (let i = 0; i < pts.length; i++) { const a = out[out.length - 1], b = pts[i], n = pts[i + 1];
+        if (a && n && Math.sign(b[0] - a[0]) === Math.sign(n[0] - b[0]) && Math.sign(b[1] - a[1]) === Math.sign(n[1] - b[1])) continue; out.push(b); }
+      if (out.length) out[out.length - 1] = [tx, ty];
+      return out;
+    }
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nc = c + dc, nr = r + dr;
+      if (!free(nc, nr) || (dc && dr && (!free(c + dc, r) || !free(c, r + dr)))) continue;
+      const ng = g.get(k) + (dc && dr ? 1.414 : 1), nk = id(nc, nr);
+      if (ng < (g.get(nk) ?? 1e9)) { g.set(nk, ng); from.set(nk, k); open.push([ng + Math.hypot(t[0] - nc, t[1] - nr), nc, nr]); }
+    }
+  }
+  return null;
+}
+function walkTo(e, x, y) {
+  return new Promise(r => { e.path = null; e.tx = x; e.ty = y; e.ghost = true; e.onArrive = () => { e.onArrive = null; e.ghost = false; r(); }; });
+}
+async function walkPath(e, pts) { for (const [x, y] of pts) await walkTo(e, x, y); }
+function face(e, other) { const dx = other.x - e.x, dy = other.y - e.y; e.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"); }
+
+/* ---------- 老師巡視（學生自由走動時） ---------- */
+const PATROL = [[300, 150], [316, 300], [300, 150], POS.老師];
+let patrolOn = false;
+async function patrol() {
+  patrolOn = true; const T = E.老師;
+  while (patrolOn) for (const p of PATROL) { if (!patrolOn) return; await walkTo(T, ...p); if (!patrolOn) return; T.dir = "down"; await sleep(1600); }
+}
+function stopPatrol() { patrolOn = false; return walkTo(E.老師, ...POS.老師).then(() => { E.老師.dir = "down"; }); }
+
+/* ---------- 點地板移動 ---------- */
+let player = null, control = false, marker = null, zone = null, guide = null;
+/* ---------- 支線小任務 ---------- */
+let questsOn = false, questTarget = null, questBusy = false;
+const activeQuests = () => questsOn ? 台詞.支線.filter(q => !q.done) : [];
+function paintStars() { $("stars").innerHTML = questsOn || S.stars ? `${icon("星星") || "★"} 善意星星 ${S.stars} / ${台詞.支線.length}` : ""; }
+function markQuests() { activeQuests().forEach(q => emote(EXTRA[q.對象], "！", 1e9)); }
+function checkQuest() {
+  if (!control || questBusy || !player) return;
+  for (const q of activeQuests()) {
+    const [ax, ay] = q.站位, d = Math.hypot(player.x - ax, player.y - ay);
+    if ((questTarget === q && d < 6) || (player.tx == null && d < 12)) { runQuest(q); return; }
+  }
+}
+async function runQuest(q) {
+  questBusy = true; control = false; questTarget = null; player.tx = player.ty = null; player.path = null; hint("");
+  const n = EXTRA[q.對象]; n.emote = null;
+  face(player, n); face(n, player); camFocus(player, n);
+  setPortrait("pl", "小明", "開心");
+  if (q.圖片) showPicture(q.圖片);
+  await talk(q.劇情);
+  let helped = false;
+  for (;;) {
+    const i = await ask("小任務｜" + q.名稱, q.題目, q.選項), o = q.選項[i];
+    await say("小明", o.好 ? "放心" : "生氣", o.字.replace(/^「|」$/g, ""));
+    if (o.好) { sfx.badge(); await feedback("good", o.回饋 + "你幫助了同學，獲得一顆善意星星！"); helped = true; break; }
+    sfx.hmm();
+    if (await perspective(o)) continue;
+    S.kept.push(o.字); await talk(o.後果); break;
+  }
+  if (helped) { emote(n, "♪", 2500); await say(...q.結尾); }
+  endTalk(); hidePicture();
+  q.done = true; if (helped) { await starFly(); S.stars++; S.helped.push(q.名稱); } paintStars();
+  camReset(); hint(台詞.開場提示); markQuests();
+  questBusy = false; control = true;
+}
+cv.addEventListener("pointerdown", ev => {
+  if (!control || !player) return;
+  const r = cv.getBoundingClientRect(), x = view.vx + (ev.clientX - r.left) / r.width * W / view.z, y = view.vy + (ev.clientY - r.top) / r.height * H / view.z;
+  let tx = x, ty = y + 8;
+  questTarget = null;
+  for (const q of activeQuests()) {
+    const n = EXTRA[q.對象];
+    if (Math.abs(x - n.x) < 14 && y > n.y - 48 && y < n.y + 6) { questTarget = q; [tx, ty] = q.站位; break; }
+  }
+  // 點到桌子、同學或走不到的地方：由近到遠找一個真的走得到的位置
+  let path = findPath(player.x, player.y, tx, ty);
+  if (!path || !path.length) {
+    const cand = [];
+    for (let a = 0; a < 24; a++) for (let rr = 8; rr < 90; rr += 6) {
+      const qx = tx + Math.cos(a / 24 * Math.PI * 2) * rr, qy = ty + Math.sin(a / 24 * Math.PI * 2) * rr;
+      if (!hit(qx, qy)) { cand.push({ x: qx, y: qy, d: rr + Math.hypot(qx - player.x, qy - player.y) * .2 }); break; }
+    }
+    cand.sort((a, b) => a.d - b.d);
+    for (const c of cand) { path = findPath(player.x, player.y, c.x, c.y); if (path && path.length) { tx = c.x; ty = c.y; break; } }
+  }
+  if (!path || !path.length) return;
+  player.path = path; [player.tx, player.ty] = player.path.shift(); player.onArrive = null;
+  marker = { x: tx, y: ty, t: performance.now() }; sfx.tap();
+});
+function waitZone(test) { return new Promise(r => { zone = { test, r }; }); }
+
+/* ---------- 鏡頭：對話時拉近，讓說話的人出現在畫面上半部，不被對話框擋住 ---------- */
+const cam = { x: W / 2, y: H / 2, z: 1 }, view = { vx: 0, vy: 0, z: 1 };
+let camTarget = { f: null, z: 1 };
+function camFocus(...ents) { camTarget = { f: ents, z: 1.55 }; }
+function camReset() { camTarget = { f: null, z: 1 }; }
+function updateCam(dt) {
+  let tx = W / 2, ty = H / 2;
+  if (camTarget.f) { tx = camTarget.f.reduce((a, e) => a + e.x, 0) / camTarget.f.length; ty = camTarget.f.reduce((a, e) => a + e.y, 0) / camTarget.f.length - 20; }
+  const k = 1 - Math.exp(-dt * 3.5);
+  cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k; cam.z += (camTarget.z - cam.z) * k;
+  const z = cam.z, vw = W / z, vh = H / z, fy = .5 - (z - 1) / .55 * .3;
+  view.z = z; view.vx = clamp(cam.x - vw / 2, 0, W - vw); view.vy = clamp(cam.y - vh * fy, 0, H - vh);
+}
+
+/* ---------- 繪製迴圈 ---------- */
+let last = performance.now();
+function loop(now) {
+  // 平板效能較差時也維持正常走路速度：把時間切成小段更新
+  const frameDt = Math.min(.5, (now - last) / 1000); let rest = frameDt; last = now;
+  while (rest > 0) { const s = Math.min(rest, .033); update(s); rest -= s; }
+  if (zone && control && player && zone.test(player)) { const z = zone; zone = null; player.tx = player.ty = null; player.path = null; z.r(); }
+  checkQuest();
+  updateCam(frameDt);
+  const k = SCALE * view.z;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(k, 0, 0, k, -view.vx * k, -view.vy * k); ctx.imageSmoothingEnabled = false;
+  if (IMG.map) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.drawImage(IMG.map, 0, 0, W, H); ctx.imageSmoothingEnabled = false; }
+  else ctx.drawImage(mapCanvas, 0, 0);
+  if (marker && now - marker.t < 600) { const k = (now - marker.t) / 600; ctx.strokeStyle = `rgba(242,163,58,${1 - k})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(marker.x, marker.y, 6 + k * 8, 3 + k * 4, 0, 0, 7); ctx.stroke(); }
+  if (guide) {
+    // 目標提示：腳下閃動的光環＋白底深框的箭頭，在木頭色背景上也看得清楚
+    const g = typeof guide === "function" ? guide() : guide, b = Math.sin(now / 200) * 3, k = (now % 1200) / 1200;
+    ctx.lineWidth = 2; ctx.strokeStyle = `rgba(255,255,255,${.9 - k * .8})`;
+    ctx.beginPath(); ctx.ellipse(g.x, g.y, 8 + k * 10, 3.5 + k * 4.5, 0, 0, 7); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,214,90,.9)"; ctx.beginPath(); ctx.ellipse(g.x, g.y, 9, 4, 0, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(g.x - 9, g.y - 70 + b); ctx.lineTo(g.x + 9, g.y - 70 + b); ctx.lineTo(g.x, g.y - 57 + b); ctx.closePath();
+    ctx.lineJoin = "round"; ctx.lineWidth = 3.5; ctx.strokeStyle = "#2b1f1a"; ctx.stroke();
+    ctx.fillStyle = "#fffdf5"; ctx.fill();
+    ctx.lineWidth = 1.2; ctx.strokeStyle = "#f2a33a"; ctx.stroke();
+  }
+  const all = [...Object.values(E), ...EXTRA].filter(e => e.visible).sort((a, b) => a.y - b.y);
+  npcIdle(now);
+  all.forEach(e => drawSprite(ctx, e, now));
+  if (player && control) { ctx.fillStyle = "#f2a33a"; ctx.beginPath(); ctx.moveTo(player.x - 4, player.y - 50); ctx.lineTo(player.x + 4, player.y - 50); ctx.lineTo(player.x, player.y - 45); ctx.fill(); }
+  all.forEach(e => drawEmote(ctx, e));
+  requestAnimationFrame(loop);
+}
+
+/* ---------- 大頭像與對話 ---------- */
+const COLOR = { 小明: "#4f8fd9", 小華: "#3fae8c", 老師: "#c58b4a", 阿杰: "#e07b39", 同學: "#9a7bd1", 旁白: "#a08850" };
+const SIDE = { 小明: "pl" };
+function setPortrait(slot, who, expr) {
+  const el = $(slot);
+  if (!who) { el.classList.remove("on"); el.dataset.who = ""; return; }
+  const map = 表情[who], key = map ? (map[expr] ? expr : Object.keys(map)[0]) : null;
+  const sig = who + key;
+  if (el.dataset.sig !== sig) {
+    el.dataset.sig = sig; el.dataset.who = who;
+    const img = map ? IMG[`p_${who}_${map[key][0]}`] : null;
+    if (img) el.innerHTML = `<img src="${img.src}" alt="${esc(who)}">`;
+    else if (who !== "小明" && who !== "小華") { el.innerHTML = ""; el.dataset.sig = ""; el.classList.remove("on"); return; }  // 配角還沒有圖就不顯示
+    else {
+      const emo = map ? map[key][1] : who === "老師" ? "👩‍🏫" : "🙂";
+      el.innerHTML = `<div class="ph" style="border-color:${COLOR[who] || "#999"};background:linear-gradient(#fff,#f3ead8)"><div class="e">${emo}</div><div class="n" style="background:${COLOR[who] || "#999"}">${esc(who)}</div></div>`;
+    }
+  }
+  el.classList.add("on");
+}
+let talkRight = null; // 目前右邊的對話對象
+function say(who, expr, text) {
+  return new Promise(res => {
+    const dlg = $("dlg"), narr = who === "旁白";
+    if (!narr) {
+      const slot = SIDE[who] || "pr";
+      if (slot === "pr") talkRight = who;
+      setPortrait(slot, who, expr);
+      $("pl").classList.toggle("dim", slot !== "pl"); $("pr").classList.toggle("dim", slot !== "pr");
+    } else { $("pl").classList.add("dim"); $("pr").classList.add("dim"); }
+    dlg.classList.add("on"); dlg.classList.toggle("narr", narr);
+    $("name").style.display = narr ? "none" : "block";
+    $("name").textContent = tx(who); $("name").style.background = COLOR[who] || "#b98557";
+    text = tx(text);
+    const T = $("txt"), more = $("more"); T.textContent = ""; more.style.visibility = "hidden";
+    let i = 0, done = false;
+    const tick = setInterval(() => {
+      if (i >= text.length) { clearInterval(tick); done = true; more.style.visibility = "visible"; return; }
+      T.textContent += text[i++]; if (i % 2) sfx.blip();
+    }, 32);
+    const next = ev => {
+      ev && ev.stopPropagation();
+      if (!done) { clearInterval(tick); T.textContent = text; done = true; more.style.visibility = "visible"; return; }
+      dlg.onclick = null; stage.onclick = null; sfx.tap(); res();
+    };
+    setTimeout(() => { dlg.onclick = next; stage.onclick = ev => { if (ev.target === cv) next(ev); }; }, 120);
+  });
+}
+async function talk(lines) { for (const [w, e, t] of lines) await say(w, e, t); }
+function endTalk() { $("dlg").classList.remove("on"); $("pl").classList.remove("on"); $("pr").classList.remove("on"); $("pl").dataset.sig = $("pr").dataset.sig = ""; }
+function choose(options, label = o => o.字 || o) {
+  return new Promise(res => {
+    const m = $("opts"); m.innerHTML = "";
+    options.forEach((o, i) => {
+      const b = document.createElement("button"); b.className = "opt"; b.style.animationDelay = i * .06 + "s";
+      b.innerHTML = `<b>${String.fromCharCode(65 + i)}</b>${esc(tx(label(o)))}`;
+      b.onclick = ev => { ev.stopPropagation(); sfx.tap(); m.innerHTML = ""; $("dlg").classList.remove("asking"); res(i); };
+      m.appendChild(b);
+    });
+  });
+}
+// 問題和選項都放在對話框裡；tag 是對話框左上角的小標籤（例如「步驟 1｜停」）
+async function ask(tag, question, options, label) {
+  const dlg = $("dlg");
+  $("pl").classList.remove("dim"); $("pr").classList.add("dim");
+  dlg.classList.add("on", "asking"); dlg.classList.remove("narr");
+  $("name").style.display = "block"; $("name").textContent = tx(tag || "選一選"); $("name").style.background = "var(--accent)";
+  $("txt").textContent = tx(question); $("more").style.visibility = "hidden";
+  return choose(options, label);
+}
+function hint(text) { const h = $("hint"); if (text) { h.textContent = tx(text); h.style.display = "block"; } else h.style.display = "none"; }
+// 回饋：kind = "good"（做得好）、"hint"（再想想）、"info"（小提醒）
+const FB_STYLE = { good: ["很好！", "#3fae6a"], hint: ["再想想", "#e2894f"], info: ["小提醒", "#b98557"] };
+function feedback(kind, text, retry = false, okText = "繼續") {
+  return new Promise(res => {
+    const f = $("fb"), [label, col] = FB_STYLE[kind] || FB_STYLE.info, tag = f.querySelector(".tag");
+    tag.textContent = label; tag.style.background = col; f.querySelector("p").textContent = tx(text);
+    const b = f.querySelector("button"); b.textContent = retry ? "↺ 重來一次" : okText;
+    f.classList.add("on");
+    b.onclick = ev => { ev.stopPropagation(); sfx.tap(); f.classList.remove("on"); res(); };
+  });
+}
+function sheet(html) { const s = $("sheet"); s.innerHTML = tx(html); s.classList.add("on"); s.scrollTop = 0; return s; }
+function closeSheet() { $("sheet").classList.remove("on"); }
+async function flash(text) {
+  const f = $("flash"), t = $("flashText"); t.textContent = text || "";
+  f.style.opacity = 1; t.style.opacity = 1; tone([440, 660, 880], .25, "sine", .12); await sleep(900);
+  return async () => { f.style.opacity = 0; await sleep(500); t.style.opacity = 0; };
+}
+
+/* ---------- 狀態 ---------- */
+const S = { stars: 0, helped: [], kept: [], mingFeel: [], huaFeel: [], gender: "", mingTemp: 3, mingNeed: "", huaNeed: "", m: 3, h: 3, fr: 2, badges: new Set(), tried: new Set(), leaderOk: false, reflect: "", ending: "" };
+const tempColor = n => ["#7cc576", "#b7d35a", "#f2c94c", "#f2994a", "#e2574c"][n - 1];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function paintHUD() {
+  const bars = (id, v) => { $(id).innerHTML = [1, 2, 3, 4, 5].map(i => `<i style="background:${i <= v ? tempColor(v) : ""}"></i>`).join(""); };
+  bars("bm", S.m); bars("bh", S.h);
+  $("hearts").innerHTML = heartsHTML(S.fr);
+  $("badges").innerHTML = ["停", "想", "說", "找"].map(b => `<span class="badge ${S.badges.has(b) ? "on" : ""}">${b}</span>`).join("");
+}
+function stageName(t) { $("stageName").textContent = tx(t); }
+
+/* ---------- 任務面板 ---------- */
+function cardTask(cfg, who) {
+  return new Promise(res => {
+    const s = sheet(`<div class="ribbon">任務</div><h2>${esc(cfg.題目)}</h2>
+      <div class="tmface" style="margin:0 auto .7em;width:8.5em;height:8.5em">${portraitHTML(who, who === "小明" ? "尷尬" : "緊張")}</div>
+      <div class="cards"></div><div class="row"><button class="btn" id="ok" disabled>確定</button></div>`);
+    const box = s.querySelector(".cards"), ok = s.querySelector("#ok"); let sel = [];
+    cfg.卡片.forEach(n => {
+      const b = document.createElement("button"); b.className = "card"; b.dataset.n = n;
+      b.innerHTML = IMG.icons ? `<b>${icon(n)}</b>${esc(tx(n))}` : `<span class="dot" style="background:${(圖示[n] || [0, "#ccc"])[1]}"></span>${esc(tx(n))}`;
+      b.onclick = () => { sfx.tap(); if (sel.includes(n)) sel = sel.filter(x => x !== n); else if (sel.length < 2) sel.push(n);
+        box.querySelectorAll(".card").forEach(c => c.classList.toggle("on", sel.includes(c.dataset.n))); ok.disabled = !sel.length; };
+      box.appendChild(b);
+    });
+    ok.onclick = async () => {
+      const bad = sel.find(x => cfg.提示卡[x]);
+      if (bad) { sfx.hmm(); await feedback("hint", cfg.提示卡[bad], true); sel = []; box.querySelectorAll(".card").forEach(c => c.classList.remove("on")); ok.disabled = true; return; }
+      sfx.good(); await feedback("good", cfg.答對); closeSheet(); res(sel);
+    };
+  });
+}
+function listTask(title, opts) {
+  return new Promise(res => {
+    const s = sheet(`<div class="ribbon">任務</div><h2>${esc(title)}</h2><div class="opts"></div>`);
+    opts.forEach((o, i) => { const b = document.createElement("button"); b.className = "choice"; b.textContent = tx(o); b.onclick = () => { sfx.tap(); res(i); }; s.querySelector(".opts").appendChild(b); });
+  });
+}
+const portraitSrc = (who, expr) => { const m = 表情[who]; const im = m && m[expr] ? IMG[`p_${who}_${m[expr][0]}`] : null; return im ? im.src : null; };
+const portraitHTML = (who, expr) => { const src = portraitSrc(who, expr); return src ? `<img src="${src}" alt="${esc(who)}">` : `<div class="e">${表情[who] && 表情[who][expr] ? 表情[who][expr][1] : "🙂"}</div>`; };
+function thermoTask() {
+  return new Promise(res => {
+    const t = 任務.溫度計, faces = ["尷尬", "尷尬", "難過", "難過", "難過"];
+    const s = sheet(`<div class="ribbon">任務</div><h2>${esc(t.題目)}</h2>
+      <div class="tmwrap">
+        <div class="tmface" id="tf">${portraitHTML("小明", "尷尬")}</div>
+        <div class="tm" id="tm"><div class="tube"><div class="fill" id="fill"></div></div><div class="bulb" id="bulb"></div></div>
+        <div class="tmlabels" id="tl"></div>
+      </div>
+      <div class="row"><button class="btn" id="ok" disabled>確定</button></div>`);
+    const fill = s.querySelector("#fill"), bulb = s.querySelector("#bulb"), tl = s.querySelector("#tl"), ok = s.querySelector("#ok"), tf = s.querySelector("#tf");
+    let v = 0;
+    const set = n => {
+      v = n; tone([300 + n * 80], .08);
+      fill.style.height = n * 20 + "%"; fill.style.background = tempColor(n); bulb.style.background = tempColor(n);
+      tl.querySelectorAll(".tml").forEach(b => b.classList.toggle("on", +b.dataset.n === n));
+      tf.innerHTML = portraitHTML("小明", faces[n - 1]); ok.disabled = false;
+    };
+    for (let n = 5; n >= 1; n--) {
+      const b = document.createElement("button"); b.className = "tml"; b.dataset.n = n;
+      b.innerHTML = `<i style="background:${tempColor(n)}"></i>${n}　${esc(t.標籤[n - 1])}`; b.onclick = () => set(n); tl.appendChild(b);
+    }
+    s.querySelector("#tm").onclick = ev => { const r = s.querySelector(".tube").getBoundingClientRect(); set(clamp(Math.ceil((r.bottom - ev.clientY) / r.height * 5), 1, 5)); };
+    ok.onclick = async () => { sfx.good(); await feedback("info", `小明的心情溫度到了 ${v} 格，${v >= 3 ? "心裡很不舒服" : "心裡有點不舒服"}。`); closeSheet(); res(v); };
+  });
+}
+function ahaPanel() {
+  return new Promise(res => {
+    const pills = a => a.map(x => `<span class="pill">${esc(x)}</span>`).join("");
+    const s = sheet(`<h2 style="text-align:center">同一件事，兩種心情</h2>
+      <div class="aha">
+        <div class="col" style="background:#e3eefb"><div class="ahaimg">${portraitHTML("小明", "難過")}</div><div><b style="color:var(--ming)">小明</b><br>感受：${pills(S.mingFeel)}<br>心情溫度：${S.mingTemp} / 5<br>想要：${pills([S.mingNeed])}</div></div>
+        <div class="col" style="background:#e0f3ec"><div class="ahaimg">${portraitHTML("小華", "為難")}</div><div><b style="color:var(--hua)">小華</b><br>感受：${pills(S.huaFeel)}<br>想要：${pills([S.huaNeed])}</div></div>
+      </div>
+      <div class="quote">小明以為：「他們不想要我。」<br>小華其實是：「我怕違反規定，又太急了。」</div>
+      <h2 style="text-align:center;margin-top:.6em">看不到對方的心，就可能誤會。</h2>
+      <div class="row"><button class="btn" id="ok">回到現在 ▶</button></div>`);
+    sfx.badge(); s.querySelector("#ok").onclick = () => { sfx.tap(); closeSheet(); res(); };
+  });
+}
+function reflectPanel() {
+  return new Promise(res => {
+    const r = 任務.反思;
+    const s = sheet(`<div class="ribbon">我的反思卡</div><h2>${esc(r.題目)}</h2><div class="opts"></div>
+      <textarea id="t" rows="2" placeholder="或是自己寫……"></textarea><div class="row"><button class="btn" id="ok" disabled>完成</button></div>`);
+    const box = s.querySelector(".opts"), t = s.querySelector("#t"), ok = s.querySelector("#ok"); let chosen = "";
+    r.選項.forEach(o => { const b = document.createElement("button"); b.className = "choice"; b.textContent = o;
+      b.onclick = () => { sfx.tap(); chosen = o; t.value = ""; box.querySelectorAll(".choice").forEach(x => x.classList.toggle("on", x === b)); ok.disabled = false; }; box.appendChild(b); });
+    t.oninput = () => { if (t.value.trim()) { chosen = ""; box.querySelectorAll(".choice").forEach(x => x.classList.remove("on")); } ok.disabled = !(chosen || t.value.trim()); };
+    ok.onclick = () => { S.reflect = chosen || t.value.trim(); sfx.badge(); closeSheet(); res(); };
+  });
+}
+/* 旅程摘要：欣賞式的稱讚，具體說出孩子做到的事，不打分數 */
+function summaryPanel() {
+  const 頓號 = a => a.join("、");
+  const 讚 = [];   // [圖示, 標題, 欣賞的話]
+  讚.push(["開心", "你讀懂了小明的心", `你看出小明覺得「${頓號(S.mingFeel)}」，也發現{他P}心裡其實是「${S.mingNeed}」。能讀懂別人沒說出口的感受，是很溫暖的能力。`]);
+  讚.push(["擔心", "你願意站到另一邊看看", `換成小華之後，你發現{他F}其實是「${頓號(S.huaFeel)}」，心裡也想著「${S.huaNeed}」。願意從兩邊看事情，就不容易誤會別人。`]);
+  const steps = ["停", "想", "說", "找"].filter(b => S.badges.has(b));
+  if (steps.length === 4) 讚.push(["星星", "你一步一步陪小明解決問題", "你先讓小明冷靜下來，再說出感受、一起找辦法。「停、想、說、找」，你每一步都做到了！"]);
+  else if (steps.length) 讚.push(["星星", "你陪小明走出了困難", `你用了「${頓號(steps)}」，一步一步幫小明把事情說清楚。`]);
+  if (S.ending === "問老師") 讚.push(["開心", "你找到了大家都 OK 的辦法", "你想到一起去問老師，同時照顧到小明想跟朋友在一起、小華想遵守規定。"]);
+  if (S.ending === "別組") 讚.push(["開心", "你找到了大家都 OK 的辦法", "你讓小明先加入缺人的那一組，既幫了別人，也遵守了規定。"]);
+  if (S.helped.length) 讚.push(["愛心", "你的善意讓教室更溫暖", `你主動關心了 ${S.helped.length} 組同學（${頓號(S.helped)}）。注意到別人的需要，並願意伸出手，真的很了不起。`]);
+  if (S.kept.length) 讚.push(["為難", "你勇敢面對自己的選擇", "有時候你選了不一樣的做法，也看見了結果，還認真想了對方的感受。願意從經驗裡學習，就是在長大。"]);
+  if (S.leaderOk) 讚.push(["得意", "換你當組長，也做得很好", "你知道拒絕別人時，說出原因很重要，這樣對方就不會誤會。"]);
+  const s = sheet(`<h2 style="text-align:center">你的旅程，有好多值得被看見的地方</h2>
+    <div class="pledge"><div class="pl1">我的好朋友約定</div><div class="pl2">下次我和同學意見不同的時候，我會先「${esc(S.reflect)}」。</div>
+      <div class="pl3">把這句話寫在便利貼上，貼到班上的「好朋友約定」海報吧！</div></div>
+    <div class="praise">${讚.map(([ic, t, w]) => `<div class="pcard"><div class="pic">${icon(ic) || "★"}</div><div><div class="pt">${esc(t)}</div><div class="pw">${esc(w)}</div></div></div>`).join("")}</div>
+    <div class="row"><button class="btn ghost" id="again">↺ 再玩一次</button></div>`);
+  s.querySelector("#again").onclick = () => location.reload();
+}
+function breathe() {
+  return new Promise(async res => {
+    setMusic("呼吸");
+    const b = $("breath"), c = $("circle"), f = $("bface"), st = $("bstep"), n = $("bcnt");
+    f.innerHTML = portraitHTML("小明", "平靜"); b.classList.add("on"); st.textContent = "準備"; n.textContent = "跟著小明一起深呼吸，共 3 次";
+    emote(E.小明, "呼～", 20000);
+    await sleep(1000);
+    for (let i = 1; i <= 3; i++) {
+      n.textContent = `第 ${i} 次 / 共 3 次`;
+      st.textContent = "吸氣"; c.classList.add("big"); f.classList.add("in"); tone([392], .6); await sleep(3000);
+      st.textContent = "吐氣"; c.classList.remove("big"); f.classList.remove("in"); tone([294], .6); await sleep(3000);
+    }
+    st.textContent = "很好！"; n.textContent = "小明冷靜下來了"; sfx.good(); E.小明.emote = null; setMusic("教室"); await sleep(1200);
+    b.classList.remove("on"); res();
+  });
+}
+/* 轉場卡：mid() 會在畫面被蓋住時執行（例如換場景、換角色位置） */
+async function transitionCard({ style = "sepia", top = "", who = null, expr = "", bottom = "", hold = 2200, mid = null }) {
+  const m = $("memo"), m1 = m.querySelector(".m1"), mf = m.querySelector(".mface"), m2 = m.querySelector(".m2");
+  m.className = "on " + style; m.style.opacity = 0; m1.innerHTML = tx(top); m2.textContent = tx(bottom); m2.style.display = bottom ? "" : "none";
+  mf.innerHTML = who ? portraitHTML(who, expr) : ""; mf.style.display = who ? "" : "none";
+  [m1, mf, m2].forEach(x => x.classList.remove("show"));
+  await sleep(30); m.style.opacity = 1; tone([660, 523, 440], .3, "sine", .14);
+  await sleep(450); m1.classList.add("show"); if (mid) mid();
+  await sleep(600); mf.classList.add("show");
+  await sleep(500); m2.classList.add("show");
+  await sleep(hold);
+  m.style.opacity = 0; await sleep(500); m.className = "";
+}
+/* ====================== 遊戲流程 ====================== */
+const near = (a, b, d) => Math.hypot(a.x - b.x, a.y - b.y) < d;
+const nearT2 = p => p.x > 336 && p.x < 545 && p.y > 92 && p.y < 228;
+
+async function play() {
+  // 開場
+  stageName("開場");
+  E.小明.dir = "up";
+  await talk(台詞.開場); endTalk();
+  await posterPanel();
+  await talk(台詞.開場_海報後); endTalk();
+  // 第 1 關：自由走到阿杰那一組
+  stageName("第 1 關｜小明的角度");
+  player = E.小明; questsOn = true; paintStars(); markQuests();
+  control = true; guide = () => E.阿杰; hint(台詞.開場提示); patrol();
+  await waitZone(nearT2);
+  questsOn = false; activeQuests(); 台詞.支線.forEach(q => { if (!q.done) EXTRA[q.對象].emote = null; });
+  control = false; guide = null; hint(""); player.solid = false; stopPatrol();
+  camFocus(E.小明, E.小華);
+  face(E.小明, E.小華); face(E.小華, E.小明); emote(E.阿杰, "♪");
+  const L1 = 台詞.第一關;
+  await say(...L1[0]);
+  emote(E.小華, "急！"); await say(...L1[1]);
+  E.小華.dir = "right"; await say(...L1[2]);
+  emote(E.組員1, "嘻嘻", 2500); emote(E.組員2, "嘻嘻", 2500); await say(...L1[3]);
+  emote(E.小明, "…", 3000); await say(...L1[4]);
+  endTalk();
+  S.mingFeel = await cardTask(任務.小明感受, "小明");
+  // 性別小問題
+  const g = CFG.p.g === "女" ? 任務.性別_女 : 任務.性別;
+  await say("小明", g.表情 || "難過", g.心裡話);
+  const gi = await ask("想一想", g.題目, g.選項, o => o[0]);
+  S.gender = g.選項[gi][0]; gi === 0 ? sfx.good() : sfx.hmm();
+  await feedback(gi === 0 ? "good" : "info", g.選項[gi][1]); endTalk();
+  S.mingTemp = await thermoTask();
+  const ni = await listTask(任務.小明需求.題目, 任務.小明需求.選項); S.mingNeed = 任務.小明需求.選項[ni];
+  sfx.good(); await feedback("info", 任務.小明需求.回饋); closeSheet();
+
+  // 轉場：換個位置
+  await transitionCard({ style: "sepia", top: `<span class="spin">⟲</span> ${esc(台詞.回憶轉場[0])}`, who: "小華", expr: "平常", bottom: 台詞.回憶轉場[1], hold: 2400, mid: () => {
+    stage.classList.add("memory"); camReset(); setMusic("回憶");
+    Object.assign(E.小明, { x: POS.小明門口[0], y: POS.小明門口[1], dir: "right" }); Object.assign(E.小華, { x: POS.小華座位[0], y: POS.小華座位[1], dir: "right" });
+    Object.assign(E.老師, { x: POS.老師[0], y: POS.老師[1], dir: "down", tx: null, ty: null });
+    stageName("第 2 關｜換個位置");
+  } });
+  // 第 2 關：操控小華去找老師
+  camReset(); player = E.小華; control = true; guide = () => E.老師; hint(台詞.第二關提示);
+  await waitZone(p => near(p, E.老師, 58));
+  control = false; guide = null; hint(""); player.solid = false;
+  camFocus(E.小華, E.老師); face(E.小華, E.老師); face(E.老師, E.小華);
+  await talk(台詞.第二關_老師); endTalk(); camFocus(E.小華);
+  await walkPath(E.小華, [[E.小華.x, 140], [379, 140], [379, 162]]);
+  E.小華.dir = "right";
+  // 小明從門口走過來
+  await walkPath(E.小明, [[90, 342], [320, 342], [320, 200], [350, 182]]);
+  camFocus(E.小明, E.小華); face(E.小明, E.小華); face(E.小華, E.小明);
+  const L2 = 台詞.第二關_小明來了;
+  await say(...L2[0]); emote(E.小華, "急！"); await say(...L2[1]); await say(...L2[2]); endTalk();
+  S.huaFeel = await cardTask(任務.小華感受, "小華");
+  const hi = await listTask(任務.小華需求.題目, 任務.小華需求.選項); S.huaNeed = 任務.小華需求.選項[hi];
+  sfx.good(); await feedback("good", 任務.小華需求.回饋); closeSheet();
+  await ahaPanel();
+
+  // 第 3 關
+  await transitionCard({ style: "bright", top: esc(台詞.回到現在[0]), who: "小明", expr: "尷尬", bottom: 台詞.回到現在[1], hold: 1800, mid: () => {
+    stage.classList.remove("memory"); setMusic("教室");
+    Object.assign(E.小明, { x: 300, y: 214, dir: "right" }); Object.assign(E.小華, { x: POS.小華座位[0], y: POS.小華座位[1], dir: "left" });
+    camFocus(E.小明, E.小華); S.m = S.mingTemp; S.h = 3; S.fr = 2; $("hud").classList.add("on"); stage.classList.add("hudon"); paintHUD();
+    stageName("第 3 關｜停、想、說、找");
+  } });
+  await talk(台詞.第三關開場);
+
+  // 3-1 做法
+  await chooseLoop(任務.做法, async o => { if (o.台詞) { emote(E.小明, o.小明 > 0 ? "哼！" : "…"); await say(...o.台詞); } });
+  endTalk();
+  await breathe();
+  // 走過去
+  camReset(); player = E.小明; control = true; guide = () => E.小華; hint(台詞.走過去提示); patrol();
+  await waitZone(p => near(p, E.小華, 52));
+  control = false; guide = null; hint(""); player.solid = false; stopPatrol();
+  camFocus(E.小明, E.小華); face(E.小明, E.小華); face(E.小華, E.小明);
+  // 3-2 開口
+  await chooseLoop(任務.開口, async o => { await say(...o.台詞); });
+  emote(E.小華, "!"); await say(...台詞.小華回應);
+  // 3-3 辦法
+  const sol = await chooseLoop(任務.辦法, null);
+  endTalk(); S.ending = sol.結局;
+  if (sol.結局 === "問老師") {
+    await stopPatrol(); camFocus(E.小明, E.小華, E.老師);
+    walkPath(E.小華, [[E.小華.x, 140], [318, 142]]);
+    await walkPath(E.小明, [[E.小明.x, 196], [284, 196], [284, 142]]);
+    await sleep(300); face(E.小明, E.老師); face(E.小華, E.老師); face(E.老師, E.小明);
+    await talk(台詞.結局_問老師);
+    emote(E.小明, "♪"); emote(E.小華, "♪"); emote(E.阿杰, "耶！");
+  } else {
+    camFocus(E.小明, EXTRA[8]);
+    await walkPath(E.小明, [[320, E.小明.y], [320, 268], [372, 268]]); E.小明.dir = "right";
+    emote(EXTRA[8], "歡迎！"); emote(EXTRA[9], "♪");
+    await talk(台詞.結局_別組);
+  }
+  endTalk(); await sleep(600);
+  // 3-4 換你當組長
+  await transitionCard({ style: "sepia", top: `<span class="spin">⟲</span> ${esc(台詞.時光倒流轉場[0])}`, who: "小華", expr: "平常", bottom: 台詞.時光倒流轉場[1], hold: 1400, mid: () => { stage.classList.add("memory"); setMusic("回憶"); } });
+  const cfg = 任務.換你當組長; camFocus(E.小華);
+  for (;;) {
+    setPortrait("pr", "小華", "平常");
+    const i = await ask("換你當組長", cfg.題目, cfg.選項);
+    const o = cfg.選項[i];
+    if (o.好) { S.leaderOk = true; setPortrait("pr", "小華", "微笑"); sfx.badge(); await feedback("good", o.回饋); break; }
+    sfx.hmm();
+    if (await perspective(o)) continue;
+    S.kept.push(o.字); await talk(o.後果); break;
+  }
+  endTalk(); stage.classList.remove("memory"); setMusic("教室");
+  camReset(); await reflectPanel();
+  stageName("我的旅程");
+  summaryPanel();
+}
+
+/* ---------- 海報範例 ---------- */
+function posterPanel() {
+  return new Promise(res => {
+    const P = 台詞.海報範例;
+    const art = IMG.posterArt ? `<img src="${IMG.posterArt.src}" alt="海報插圖">` : `<div class="pdeco">${["開心", "愛心", "星星", "愛心", "開心"].map(icon).join("") || "♥ ★ ♥"}</div>`;
+    const s = sheet(`<div class="ribbon">海報範例</div>
+      <div class="pwrap">
+        <div class="poster">
+          <i class="tape t1"></i><i class="tape t2"></i>
+          <div class="ptitle">${esc(P.標題)}</div>
+          <ol>${P.約定.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+          <div class="part">${art}</div>
+          <div class="psign">組員簽名：＿＿＿＿＿＿＿＿</div>
+        </div>
+        <div class="pinfo">
+          <h3>海報要有</h3>
+          <ul class="need">${P.要有.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+          <h3>4 個人，4 個工作</h3>
+          <div class="roles">${P.分工.map(([a, b], i) => `<div class="role"><b>${i + 1}</b><div><div class="rn">${esc(a)}</div><div class="rd">${esc(b)}</div></div></div>`).join("")}</div>
+          <div class="row" style="justify-content:flex-end"><button class="btn" id="ok">我知道了 ▶</button></div>
+        </div>
+      </div>`);
+    s.querySelector("#ok").onclick = () => { sfx.tap(); closeSheet(); res(); };
+  });
+}
+/* ---------- 小任務裡的圖片（例如小安畫的小鳥） ---------- */
+const BIRD_SVG = `<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="200" height="150" fill="#fffdf5"/>
+  <circle cx="168" cy="28" r="14" fill="#ffd84a" stroke="#f2a33a" stroke-width="3"/>
+  <path d="M10 128 Q40 118 70 128 T130 126 T192 128" fill="none" stroke="#7cc576" stroke-width="6"/>
+  <path d="M60 92 Q58 60 92 58 Q128 56 132 84 Q134 108 100 112 Q66 114 60 92Z" fill="#8cc8f0" stroke="#3a78b8" stroke-width="3.5"/>
+  <path d="M120 62 Q122 40 140 42 Q156 46 150 64 Q144 76 128 72" fill="#8cc8f0" stroke="#3a78b8" stroke-width="3.5"/>
+  <path d="M150 54 L168 58 L150 64" fill="#f7a23a" stroke="#d9772a" stroke-width="3"/>
+  <circle cx="139" cy="54" r="3.5" fill="#222"/>
+  <path d="M78 84 Q92 70 108 86 Q94 96 78 84Z" fill="#5aa2e0" stroke="#3a78b8" stroke-width="3"/>
+  <path d="M60 90 L36 80 M60 94 L34 96" stroke="#3a78b8" stroke-width="3.5"/>
+  <path d="M92 112 L88 126 M104 110 L106 126" stroke="#d9772a" stroke-width="3.5"/>
+  <path d="M30 40 q8 -8 16 0 M50 30 q8 -8 16 0" fill="none" stroke="#888" stroke-width="2.5"/>
+</svg>`;
+function showPicture(name) {
+  const pic = $("pic");
+  pic.querySelector(".pimg").innerHTML = name === "小鳥" && IMG.bird ? `<img src="${IMG.bird.src}" alt="小安畫的小鳥">` : BIRD_SVG;
+  pic.querySelector(".pcap").textContent = "小安畫的小鳥";
+  pic.classList.add("on");
+}
+function hidePicture() { $("pic").classList.remove("on"); }
+/* 完成小任務：星星從畫面中央跳出來，再飛進上方的「善意星星」計數 */
+async function starFly() {
+  const st = stage.getBoundingClientRect(), f = document.createElement("div");
+  f.className = "flystar"; f.style.left = "50%"; f.style.top = "42%";
+  f.innerHTML = `<div class="big">${icon("星星") || "★"}</div><div class="cap">+1 善意星星</div>`;
+  stage.appendChild(f);
+  await sleep(30); f.classList.add("show"); sfx.badge();
+  for (let i = 0; i < 10; i++) {   // 四周散開的小光點
+    const sp = document.createElement("div"), a = i / 10 * Math.PI * 2;
+    sp.className = "spark"; sp.style.left = "50%"; sp.style.top = "42%"; stage.appendChild(sp);
+    requestAnimationFrame(() => { sp.style.transform = `translate(${Math.cos(a) * 7}em,${Math.sin(a) * 5}em)`; sp.style.opacity = 0; });
+    setTimeout(() => sp.remove(), 700);
+  }
+  await sleep(1100);
+  const t = $("stars").getBoundingClientRect();
+  f.classList.add("fly");
+  f.style.left = ((t.left + t.width * .18 - st.left) / st.width * 100) + "%";
+  f.style.top = ((t.top + t.height / 2 - st.top) / st.height * 100) + "%";
+  f.style.transform = "translate(-50%,-50%) scale(.18)"; f.style.opacity = .3;
+  await sleep(700); f.remove();
+  tone([1046, 1318], .12, "sine", .07);
+  $("stars").classList.remove("pulse"); void $("stars").offsetWidth; $("stars").classList.add("pulse");
+}
+
+/* 選了不好的回應：先看見對方的反應 → 換位思考 → 讓學生自己決定要不要換個做法（回傳 true 代表想換） */
+async function perspective(o) {
+  if (o.反應) await say(...o.反應);
+  const P = o.換位;
+  if (P) {
+    const fi = await ask("換位思考", P.問題, P.感受);
+    await feedback("info", `換成是${P.對象}，可能會覺得「${P.感受[fi]}」。${o.回饋 || ""}`);
+  }
+  const d = await ask("你的決定", "知道對方的感受之後，你想怎麼做？", ["換個做法試試看", "我還是決定這樣做"]);
+  return d === 0;
+}
+
+async function chooseLoop(cfg, onPick) {
+  for (;;) {
+    const snap = { m: S.m, h: S.h, fr: S.fr };
+    setPortrait("pl", "小明", S.m >= 4 ? "難過" : S.m === 3 ? "尷尬" : "平靜");
+    const i = await ask(cfg.步驟, cfg.題目, cfg.選項);
+    const o = cfg.選項[i];
+    S.tried.add(o.字);
+    if (onPick) await onPick(o);
+    S.m = clamp(S.m + (o.小明 || 0), 1, 5); S.h = clamp(S.h + (o.小華 || 0), 1, 5); S.fr = clamp(S.fr + (o.友誼 || 0), 0, 5);
+    paintHUD();
+    if (o.重來) {
+      sfx.hmm();
+      if (await perspective(o)) { Object.assign(S, snap); paintHUD(); continue; }
+      S.kept.push(o.字);                 // 學生堅持原本的選擇：保留後果，劇情繼續
+      if (o.後果) await talk(o.後果);
+      if (o.繼續) continue;              // 還沒找到辦法：老師引導後再想一次
+      return o;
+    }
+    (o.徽章 || []).forEach(b => S.badges.add(b)); paintHUD(); sfx.badge();
+    await feedback("good", o.回饋);
+    return o;
+  }
+}
+
+/* ---------- 角色設定畫面 ---------- */
+function applyGender() {
+  const swap = (who, girl) => {
+    if (IMG[`girl_${who}`]) IMG[who] = IMG[`girl_${who}`];
+    for (const n of [1, 2, 3, 4, 5, 6]) if (IMG[`p_${girl}_${n}`]) IMG[`p_${who}_${n}`] = IMG[`p_${girl}_${n}`];
+  };
+  if (CFG.p.g === "女") swap("小明", "主角女");
+  if (CFG.f.g === "女") swap("小華", "組長女");
+  LOOK.小明.style = CFG.p.g === "女" ? "bob" : "short";
+  LOOK.小華.style = CFG.f.g === "女" ? "pony" : "bangs";
+}
+function setupPanel() {
+  return new Promise(res => {
+    const C = 角色設定, girlArt = who => (who === "p" ? IMG["p_主角女_1"] : IMG["p_組長女_1"]);
+    const face = (who, g) => {
+      const key = who === "p" ? "小明" : "小華", exp = who === "p" ? "開心" : "微笑";
+      if (g === "女" && girlArt(who)) return `<img src="${(who === "p" ? IMG["p_主角女_1"] : IMG["p_組長女_6"]).src}" alt="">`;
+      return portraitHTML(key, exp);
+    };
+    const s = $("sheet");
+    s.innerHTML = `<div class="ribbon">角色設定</div><h2 style="font-size:1.15em;margin-bottom:.4em">開始之前，先決定故事裡的兩個主角</h2>
+      <div class="setup">
+        <div class="scard"><div class="sface" id="fp"></div><div class="sform">
+          <div class="slabel">你的名字<span>（主角）</span></div>
+          <input id="np" maxlength="${C.名字最多字數}" placeholder="${esc(C.主角預設)}" autocomplete="off">
+          <div class="sg" data-who="p"><button data-g="男" class="on">男生</button><button data-g="女">女生</button></div>
+        </div></div>
+        <div class="scard"><div class="sface" id="ff"></div><div class="sform">
+          <div class="slabel">組長的稱號<span>（自己取）</span></div>
+          <input id="nf" maxlength="${C.名字最多字數}" placeholder="${esc(C.組長預設)}" autocomplete="off">
+          <div class="chips">${C.稱號範例.map(x => `<button class="chip">${esc(x)}</button>`).join("")}</div>
+          <div class="sg" data-who="f"><button data-g="男" class="on">男生</button><button data-g="女">女生</button></div>
+        </div></div>
+      </div>
+      <div class="snote">${esc(C.提醒)}</div>
+      <div class="row"><button class="btn big" id="go">開始遊戲 ▶</button></div>`;
+    s.classList.add("on"); s.scrollTop = 0;
+    const paint = () => { $("fp").innerHTML = face("p", CFG.p.g); $("ff").innerHTML = face("f", CFG.f.g); };
+    paint();
+    s.querySelectorAll(".sg").forEach(grp => grp.querySelectorAll("button").forEach(b => b.onclick = () => {
+      sfx.tap(); CFG[grp.dataset.who].g = b.dataset.g;
+      grp.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); paint();
+    }));
+    s.querySelectorAll(".chip").forEach(c => c.onclick = () => { sfx.tap(); $("nf").value = c.textContent; });
+    const clean = (v, d) => (v || "").replace(/[<>&"'`\\\s]/g, "").slice(0, C.名字最多字數) || d;
+    s.querySelector("#go").onclick = () => {
+      CFG.p.name = clean($("np").value, C.主角預設); CFG.f.name = clean($("nf").value, C.組長預設);
+      if (CFG.p.name === CFG.f.name) CFG.f.name = CFG.f.name === C.組長預設 ? C.主角預設 : C.組長預設;
+      sfx.good(); applyGender(); closeSheet(); res();
+    };
+  });
+}
+
+/* ---------- 啟動 ---------- */
+(async () => {
+  buildMap(); await loadAll(); paintMute(); requestAnimationFrame(loop);
+  $("tpl").innerHTML = portraitHTML("小明", "開心"); $("tpr").innerHTML = portraitHTML("小華", "微笑");
+  $("tdeco").innerHTML = ["愛心", "星星", "開心", "愛心", "星星", "開心", "星星", "愛心"].map((n, i) =>
+    `<span style="left:${[6, 18, 84, 92, 10, 88, 30, 70][i]}%;top:${[18, 70, 14, 62, 44, 36, 86, 84][i]}%;animation-delay:${i * .4}s">${icon(n) || "★"}</span>`).join("");
+  $("start").disabled = false; $("start").textContent = "開始 ▶";
+  $("start").onclick = async () => { sfx.good(); setMusic("教室"); $("title").style.display = "none"; await setupPanel(); play(); };
+})();
+</script>
+</body>
+</html>
