@@ -218,6 +218,14 @@ textarea{width:100%;font-size:1em;font-family:inherit;border:.2em solid #e2d5bd;
 .pledge:before{content:"";position:absolute;top:-.55em;left:50%;width:5em;height:1.1em;margin-left:-2.5em;background:rgba(240,200,120,.75);transform:rotate(2deg);border-radius:.15em}
 .board{background:#c9955a;background-image:radial-gradient(rgba(90,55,20,.25) 1px,transparent 1.5px);background-size:.5em .5em;border:.35em solid #8a5a33;border-radius:.6em;padding:.45em .8em .7em;box-shadow:inset 0 0 .6em rgba(60,30,10,.35)}
 .bhead{width:fit-content;margin:0 auto .55em;background:#fffdf5;border-radius:.3em;padding:.1em 1em;font-weight:700;color:var(--wood);box-shadow:0 .15em .3em rgba(0,0,0,.2)}
+.mycard .bl1{display:block;color:var(--soft);font-size:.92em}
+.mycard .bl2{display:block;font-size:1.12em;font-weight:700;margin-top:.15em}
+.mycard{background:#fffaf0;border:.15em dashed #e0b84a;border-radius:.9em;padding:.6em 1em .8em}
+.mycard .bnote.mine{max-width:22em;margin:.5em auto 0;font-size:1em;padding:.8em 1.1em .6em;text-align:center}
+.bothers{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.35em .5em;margin-top:.8em;font-size:.82em}
+.bol{width:100%;text-align:center;color:var(--soft)}
+.bmini{background:#fff6a8;padding:.15em .6em;box-shadow:0 .12em .25em rgba(0,0,0,.25);transform:rotate(-1.5deg)}
+.bmini.m1{background:#d9f0ff;transform:rotate(1.5deg)}.bmini.m2{background:#dff5dc}
 .bnotes{display:grid;grid-template-columns:repeat(2,minmax(0,17em));justify-content:center;align-items:start;gap:.7em 1.4em}
 .bnote{position:relative;background:#fff6a8;padding:.55em .8em .4em;font-size:.85em;line-height:1.45;transform:rotate(var(--r));box-shadow:0 .2em .35em rgba(0,0,0,.25);color:var(--ink)}
 .bnote:nth-child(2){background:#d9f0ff}.bnote:nth-child(4){background:#dff5dc}
@@ -1397,22 +1405,20 @@ function summaryPanel() {
       <div class="pl2">「<span class="mk">${esc(S.reflect)}</span>」</div>
       <div class="pl3"><span class="st">① 寫在<u>便利貼</u>上</span><span>➜</span><span class="st">② 貼到班上的<u>「好朋友約定」海報</u></span></div></div>
     <div class="praise">${讚.map(([ic, t, w]) => `<div class="pcard"><div class="pic">${icon(ic) || "★"}</div><div><div class="pt">${esc(t)}</div><div class="pw">${esc(w).replace(/「(.+?)」/g, "「<b>$1</b>」")}</div></div></div>`).join("")}</div>
-    <div class="row"><button class="btn" id="again">📌 把我的約定貼上公布欄</button></div>`);
+    <div class="row"><button class="btn" id="again">🎫 收下我的約定卡</button></div>`);
   s.querySelector("#again").onclick = () => { sfx.tap(); boardPanel(); };
 }
-/* 再玩一次之前：讓學生看到自己的便利貼貼上班上的「好朋友約定」公布欄 */
+/* 個人約定卡（依歐姆學園第三輪建議）：遊戲只做「我想先練習的第一步」，
+   不模擬已貼上班級公布欄；真正的班級約定留到課堂上一起完成 */
 function boardPanel() {
   const mine = S.reflect || "說出我的感受，而不是罵人";
   const others = 任務.反思.選項.filter(x => x !== mine).slice(0, 3);
-  const notes = [...others.slice(0, 2), null, ...others.slice(2)];
-  const tilt = [-3, 2, -1, 3];
-  const s = sheet(`<h2 style="text-align:center;margin:0 0 .35em">📌 你的約定貼上去囉！</h2>
-    <div class="board"><div class="bhead">我們這一班的好朋友約定</div>
-      <div class="bnotes">${notes.map((x, i) => x === null
-        ? `<div class="bnote mine" style="--r:${tilt[i]}deg"><span class="bpin"></span><span class="btag">★ 我的約定</span>我會先「<b>${esc(mine)}</b>」</div>`
-        : `<div class="bnote" style="--r:${tilt[i]}deg"><span class="bpin"></span>我會先「${esc(x)}」</div>`).join("")}</div>
+  const s = sheet(`<h2 style="text-align:center;margin:0 0 .35em">🎫 這是你的約定卡</h2>
+    <div class="mycard">
+      <div class="bnote mine" style="--r:-1.5deg"><span class="bpin"></span><span class="btag">★ 我想先練習的第一步</span><span class="bl1">當我和同學意見不同時，我會先——</span><span class="bl2">「<b>${esc(mine)}</b>」</span></div>
+      <div class="bothers"><span class="bol">每個人可以從不同的地方開始：</span>${others.map((x, i) => `<span class="bmini m${i}">${esc(x)}</span>`).join("")}</div>
     </div>
-    <div class="bmsg">你的便利貼已經貼在班上的<u>「好朋友約定」公布欄</u>上了！<br>下次和同學意見不同時，記得看看它，<b>一起做到喔</b>。</div>
+    <div class="bmsg">你已經選好想練習的<b>第一步</b>。<br>接下來，帶著這張約定卡，<u>到班上和同學一起想想：我們可以怎麼做到？</u></div>
     <div class="row" id="act"><button class="btn" id="go">💪 我會做到！</button></div>`);
   setTimeout(() => { sfx.badge(); }, 650);
   // 按「我會做到」：給一個小小的承諾儀式，再留一個不搶眼的「再玩一次」給老師或下一位同學
@@ -1424,7 +1430,7 @@ function boardPanel() {
       requestAnimationFrame(() => { sp.style.transform = `translate(${Math.cos(a) * 9}em,${Math.sin(a) * 6}em)`; sp.style.opacity = 0; });
       setTimeout(() => sp.remove(), 700);
     }
-    s.querySelector("#act").innerHTML = `<div class="promise">✨ 從今天開始，我們一起做到！</div><button class="btn ghost small" id="replay">↺ 再玩一次</button>`;
+    s.querySelector("#act").innerHTML = `<div class="promise">✨ 帶著它，到班上一起做到！</div><button class="btn ghost small" id="replay">↺ 再玩一次</button>`;
     s.querySelector("#replay").onclick = () => location.reload();
   };
 }
