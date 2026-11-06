@@ -42,9 +42,15 @@ b,strong,h1,h2,h3{font-weight:400}
 .flystar.show{transform:translate(-50%,-50%) scale(1);opacity:1}
 .flystar.fly{transition:left .7s ease-in,top .7s ease-in,transform .7s ease-in,opacity .7s ease-in}
 .spark{position:absolute;z-index:39;width:.5em;height:.5em;border-radius:50%;background:#ffd84a;pointer-events:none;transition:transform .6s ease-out,opacity .6s ease-out}
-#mute{pointer-events:auto;margin-left:auto;cursor:pointer;font-size:1em}
+#mute{pointer-events:auto;cursor:pointer;font-size:1em}
+#sound{margin-left:auto;display:flex;flex-direction:column;gap:.35em;align-items:stretch;flex:none}
+#sound .tagbox{text-align:center}
+#music{pointer-events:auto;cursor:pointer;font-size:1em;user-select:none;line-height:1}
+#music svg{width:1.2em;height:1.2em;vertical-align:-.2em}
 #hud{display:none;gap:.5em;align-items:center;font-size:.85em}
-#stage.hudon #stageName{font-size:.8em}
+#stage.hudon #stageName,#stage.hudon #stars{font-size:.8em}
+#stage.hudon #top{gap:.4em}
+#stage.hudon #hud{font-size:.78em;padding:.2em .55em}
 #hud.on{display:flex}
 .meter{display:flex;align-items:center;gap:.3em;font-size:.8em}
 .bars{display:flex;gap:.12em}
@@ -56,6 +62,17 @@ b,strong,h1,h2,h3{font-weight:400}
 .ico{display:inline-block;width:1.2em;height:1.2em;background-size:400% 400%;background-repeat:no-repeat;image-rendering:pixelated;vertical-align:-.2em}
 .badge{display:inline-block;padding:0 .35em;border-radius:.4em;background:#e7ddc9;color:#b5a58e;margin-left:.15em;font-size:.85em;transition:all .4s}
 .badge.on{background:var(--accent);color:#fff}
+/* 獲得徽章／愛心變化的動畫 */
+@keyframes bpop{0%{transform:scale(1)}35%{transform:scale(1.9) rotate(-8deg)}65%{transform:scale(.9)}100%{transform:scale(1)}}
+@keyframes hshake{20%,60%{transform:translateX(-.18em)}40%,80%{transform:translateX(.18em)}}
+@keyframes floatup{0%{opacity:0;transform:translate(-50%,.3em)}15%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-1.6em)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(242,163,58,0)}50%{box-shadow:0 0 0 .35em rgba(242,163,58,.45)}}
+.badge.pop,.hpop{display:inline-block;animation:bpop .75s ease}
+.hshake{display:inline-block;animation:hshake .5s ease;filter:grayscale(1)}
+#hud.glow{animation:glow .9s ease 2}
+.floattip{position:absolute;z-index:41;pointer-events:none;white-space:nowrap;font-size:.95em;font-weight:700;background:#fff;border:.15em solid;border-radius:1em;padding:.05em .7em;animation:floatup 1.6s ease forwards}
+.bigbadge{display:flex;align-items:center;justify-content:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--accent);color:#fff;font-size:.62em;border:.08em solid #fff;box-shadow:0 0 0 .06em #c47f22}
+.flystar .sub{margin-top:.25em;background:#fff;color:var(--ink);border-radius:1em;padding:.05em .9em;font-size:.95em;white-space:nowrap}
 
 /* 提示橫幅 */
 #hint::before{content:"";display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--accent);margin-right:.5em;vertical-align:.05em;box-shadow:0 0 0 .2em rgba(242,163,58,.35)}
@@ -79,6 +96,12 @@ b,strong,h1,h2,h3{font-weight:400}
 #dlg{position:absolute;left:24%;right:24%;bottom:3%;min-height:24%;background:var(--paper);border:.25em solid var(--wood);
   border-radius:1.2em;padding:.9em 1.2em 1em;box-shadow:0 .35em 0 rgba(0,0,0,.35);display:none;z-index:7;font-size:1.05em;line-height:1.5;cursor:pointer}
 #dlg.asking{padding:.8em 1em .7em}
+.qhint{display:flex;flex-wrap:nowrap;white-space:nowrap;align-items:center;gap:.25em .3em;margin-top:.35em;font-size:.78em;color:var(--soft);background:#f4f8ff;border:.12em dashed #a9c4e6;border-radius:.7em;padding:.25em .7em;width:fit-content;max-width:100%}
+.qhint .qk{color:#3a6aa8;font-weight:700}
+.qhint u{text-decoration:underline wavy #e8a33c;text-underline-offset:.25em}
+.qhint .qs{color:#fff;border-radius:.5em;padding:0 .4em;white-space:nowrap}
+.qhint .qs0{background:#8a8fb8}.qhint .qs1{background:#5b8fd6}.qhint .qs2{background:#3fae8c}
+.qhint .qa{color:#a9c4e6;font-weight:700}
 #dlg.on{display:block}
 #dlg.narr{background:#ece6dc;color:#6b5f55;border-style:dashed}
 #name{position:absolute;top:-1.15em;left:1em;background:var(--wood2);color:#fff;font-weight:400;padding:.05em .8em;border-radius:.6em;border:.15em solid var(--wood);font-size:.9em}
@@ -133,17 +156,37 @@ b,strong,h1,h2,h3{font-weight:400}
 .tml{display:flex;align-items:center;gap:.5em;border:.18em solid #e2d5bd;background:#fff;border-radius:.7em;padding:.2em .8em;cursor:pointer;font-family:inherit;font-size:.95em;color:var(--ink);text-align:left}
 .tml i{width:.8em;height:.8em;border-radius:50%;flex:none}
 .tml.on{border-color:var(--accent);background:#fff1d6}
-.aha{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
-.aha .col{border-radius:.9em;padding:.45em .7em;line-height:1.45;font-size:.88em;display:flex;gap:.7em;align-items:center}
+.aha{display:grid;grid-template-columns:1fr 1fr;gap:.9em}
+.aha .col{border-radius:1em;padding:.6em .8em;line-height:1.5;font-size:.88em;display:flex;gap:.8em;align-items:center}
+.aha .nm{font-weight:700;font-size:1.05em;margin-bottom:.25em;display:flex;align-items:baseline;gap:.5em}
+.aha .nm small{font-weight:400;font-size:.78em;color:var(--soft)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.35em .5em;align-items:center}
+.kv>span:nth-child(odd){color:var(--soft);white-space:nowrap;font-size:.92em}
+.kv .pill{margin:0 .25em 0 0;white-space:nowrap}
+.gaps{display:grid;grid-template-columns:auto 1fr;gap:.45em .8em;align-items:center;background:#fff8ea;border:.12em solid #f0e0c0;border-radius:1em;padding:.5em 1.1em;margin-top:.6em;font-size:.92em}
+.gtag{color:#fff;border-radius:.6em;padding:.1em .6em;font-size:.85em;text-align:center;white-space:nowrap}
+.lesson{text-align:center;margin-top:.6em}
+.mk{background:linear-gradient(transparent 52%,#ffcc66 52%,#ffcc66 95%,transparent 92%);padding:0 .1em;font-weight:700}
+.mk.m{background:linear-gradient(transparent 52%,#b5d0f4 52%,#b5d0f4 95%,transparent 92%)}
+.mk.h{background:linear-gradient(transparent 52%,#ade0c6 52%,#ade0c6 95%,transparent 92%)}
+.ul{text-decoration:underline wavy #e8a33c;text-underline-offset:.25em;text-decoration-thickness:.08em;color:var(--ink)}
+.lesson b{display:block;font-size:1.1em;margin-bottom:.3em}
+.lesson>span{display:block;color:var(--soft);font-size:.85em;line-height:1.5;text-wrap:balance}
 .ahaimg{width:5.2em;height:5.2em;flex:none;border-radius:.8em;background:#fff;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
 .ahaimg img{width:115%}
 .ahaimg .e{font-size:3.5em}
 .pill{display:inline-block;background:#fff;border-radius:.6em;padding:0 .5em;margin:.1em;font-weight:400}
 .understand{text-align:center;color:var(--wood);font-size:.92em;margin-bottom:.2em}
 .needhint{background:#f4f8ff;border:.15em dashed #a9c4e6;border-radius:.8em;padding:.5em .8em;margin-bottom:.6em;font-size:.88em}
-.needhint .ht{color:#3a6aa8;margin-bottom:.25em}
-.needhint ul{margin:0;padding-left:1.2em;display:grid;grid-template-columns:1fr 1fr;column-gap:1.2em;line-height:1.5}
-.needhint .hn{color:var(--soft);font-size:.9em;margin-top:.2em}
+.needhint .ht{color:#3a6aa8;font-weight:700;margin-bottom:.35em;text-align:center}
+.needhint .ht u,.needhint .hn u{text-decoration:underline wavy #e8a33c;text-underline-offset:.25em}
+.needhint .nl{display:grid;grid-template-columns:1fr 1fr;gap:.35em 1em}
+.needhint .ni{display:flex;align-items:center;gap:.4em;background:#fff;border-radius:.6em;padding:.2em .5em;line-height:1.35}
+.needhint .nf{flex:none;color:#fff;border-radius:.5em;padding:0 .45em;font-size:.9em;white-space:nowrap}
+.needhint .na{flex:none;color:#a9c4e6;font-weight:700}
+.needhint .nk{color:var(--soft);font-size:.85em;white-space:nowrap}
+.needhint .nd b{background:linear-gradient(transparent 55%,#ffd98a 55%,#ffd98a 95%,transparent 95%)}
+.needhint .hn{color:var(--soft);font-size:.85em;margin-top:.35em;text-align:center}
 .quote{background:#fff1d6;border-radius:.8em;padding:.4em .9em;margin-top:.5em;font-size:.92em}
 textarea{width:100%;font-size:1em;font-family:inherit;border:.2em solid #e2d5bd;border-radius:.8em;padding:.4em .6em;margin-top:.5em;resize:none}
 /* 角色設定 */
@@ -159,15 +202,27 @@ textarea{width:100%;font-size:1em;font-family:inherit;border:.2em solid #e2d5bd;
 .sg button,.chip{white-space:nowrap;font-family:inherit;border:.15em solid #e2d5bd;background:#fff;border-radius:2em;padding:.15em .9em;cursor:pointer;color:var(--ink);font-size:.95em}
 .sg button.on{background:var(--accent);border-color:#c47f22;color:#fff}
 .chips{display:flex;flex-wrap:wrap;gap:.3em;margin-top:.4em}.chip{font-size:.8em;padding:.1em .6em;background:#fff8ea}
-.snote{margin-top:.6em;text-align:center;color:#b0702e;font-size:.95em}
+.snote{margin:.2em auto 0;max-width:40em;display:flex;align-items:center;gap:.8em;background:#fff8ea;border:.12em solid #f0dcb4;border-radius:.8em;padding:.1em .9em;font-size:.83em;color:var(--soft);line-height:1.4}
+.snote .sh{flex:none;color:#b0702e;font-weight:700;text-align:center;line-height:1.3;padding-right:.9em;border-right:.12em dashed #f0dcb4}
+.snote ol{margin:0;padding-left:1.4em}
+.snote b{color:var(--ink);background:linear-gradient(transparent 55%,#ffd98a 55%,#ffd98a 95%,transparent 95%)}
+.snote u{text-decoration:underline wavy #e8a33c;text-underline-offset:.25em;color:var(--ink)}
 /* 旅程摘要（欣賞式稱讚） */
 .praise{display:grid;grid-template-columns:1fr 1fr;gap:.55em}
 .pcard{display:flex;gap:.6em;align-items:flex-start;background:#fff;border:.15em solid #ecdcbc;border-radius:.9em;padding:.55em .7em;animation:rise .4s ease both}
 .pcard:nth-child(2){animation-delay:.12s}.pcard:nth-child(3){animation-delay:.24s}.pcard:nth-child(4){animation-delay:.36s}.pcard:nth-child(5){animation-delay:.48s}.pcard:nth-child(6){animation-delay:.6s}
 .pcard .pic{flex:none;font-size:1.7em;line-height:1}.pcard .pic .ico{width:1.2em;height:1.2em}
-.pt{color:var(--wood);font-size:1em;margin-bottom:.15em}.pw{font-size:.85em;line-height:1.5}
-.pledge{margin:.2em 0 .8em;background:#fff6c8;border:.15em dashed #e0b84a;border-radius:.6em;padding:.6em 1em;transform:rotate(-.6deg);text-align:center}
-.pl1{color:#b0702e;font-size:.9em}.pl2{font-size:1.15em;margin:.2em 0}.pl3{font-size:.8em;color:var(--soft)}
+.pt{color:var(--wood);font-size:1em;font-weight:700;margin-bottom:.2em}.pw{font-size:.85em;line-height:1.6;color:var(--soft)}
+.pw b{color:var(--ink);background:linear-gradient(transparent 55%,#ffe2a0 55%,#ffe2a0 95%,transparent 95%);padding:0 .05em}
+.pledge{position:relative;margin:.5em auto .9em;max-width:34em;background:#fff6c8;border-radius:.4em;padding:.9em 1.2em .7em;transform:rotate(-.6deg);text-align:center;box-shadow:0 .25em .5em rgba(120,80,20,.15)}
+.pledge:before{content:"";position:absolute;top:-.55em;left:50%;width:5em;height:1.1em;margin-left:-2.5em;background:rgba(240,200,120,.75);transform:rotate(2deg);border-radius:.15em}
+.pl1{display:inline-block;background:#e0a43a;color:#fff;font-size:.8em;border-radius:1em;padding:.05em .8em;margin-bottom:.45em}
+.pl0{font-size:.92em;color:var(--soft)}
+.pl2{font-size:1.35em;font-weight:700;margin:.15em 0 .55em;line-height:1.5}
+.pl2 .mk{background:linear-gradient(transparent 52%,#ffcc66 52%,#ffcc66 95%,transparent 95%)}
+.pl3{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:.4em;font-size:.82em;color:var(--soft);border-top:.12em dashed #e8cf86;padding-top:.5em}
+.pl3 .st{background:#fff;border-radius:.8em;padding:.1em .7em}
+.pl3 u{text-decoration:underline wavy #e8a33c;text-underline-offset:.25em;color:var(--ink)}
 .sum{display:grid;grid-template-columns:1fr 1fr;gap:.6em}
 .sum .box{background:#fff;border-radius:.8em;padding:.4em .8em}
 .sum .full{grid-column:1/-1}
@@ -284,7 +339,10 @@ textarea{width:100%;font-size:1em;font-family:inherit;border:.2em solid #e2d5bd;
       <span id="hearts"></span>
       <span id="badges"></span>
     </div>
-    <div class="tagbox" id="mute">音效 開</div>
+    <div id="sound">
+      <div class="tagbox" id="mute" title="全部聲音開關">音效 開</div>
+      <div class="tagbox" id="music" title="背景音樂開關" aria-label="背景音樂開關"></div>
+    </div>
   </div>
   <div id="hint"></div>
   <div class="portrait" id="pl"></div>
@@ -333,7 +391,7 @@ const 台詞 = {
     ["老師", "說明", "所以每組最多 4 個人，超過的組要重新分喔！"],
     ["旁白", "", "等一下，你會用兩個人的眼睛，看同一件事。"],
   ],
-  開場提示: "點地板走走看。頭上有「！」的同學可以點他聊天，準備好就去找阿杰（右上角）",
+  開場提示: "點地板走走看。點閃閃發亮的東西看看，頭上有「！」的同學可以聊天，準備好就去找阿杰（右上角）",
   /* 支線小任務：第 1 關自由走動時，點頭上有「！」的同學就會觸發。不做也能直接去找阿杰。 */
   支線: [
     { 名稱: "搶彩色筆", 對象: 3, 站位: [272, 172],
@@ -632,7 +690,7 @@ function setMusic(mode) {
     bgmInit();
     if (ac.state === "suspended") ac.resume();
     if (bgm.mode === mode) return;
-    const now = ac.currentTime, target = muted ? 0 : 背景音樂.音量;
+    const now = ac.currentTime;
     bgm.gain.gain.cancelScheduledValues(now);
     bgm.gain.gain.setValueAtTime(bgm.gain.gain.value, now);
     bgm.gain.gain.linearRampToValueAtTime(0, now + .6);       // 淡出舊的
@@ -640,18 +698,37 @@ function setMusic(mode) {
       bgm.mode = mode; bgm.step = 0; bgm.next = ac.currentTime + .05;
       const t = ac.currentTime;
       bgm.gain.gain.cancelScheduledValues(t); bgm.gain.gain.setValueAtTime(0, t);
-      bgm.gain.gain.linearRampToValueAtTime(muted ? 0 : 背景音樂.音量, t + 1.2);   // 淡入新的
+      bgm.gain.gain.linearRampToValueAtTime(bgmVol(), t + 1.2);   // 淡入新的
       if (!bgm.timer) bgm.timer = setInterval(bgmTick, 100);
     }, 650);
   } catch (e) {}
 }
-function applyMute() { if (bgm.gain && ac) { const t = ac.currentTime; bgm.gain.gain.cancelScheduledValues(t); bgm.gain.gain.setTargetAtTime(muted ? 0 : 背景音樂.音量, t, .15); } }
+/* 背景音樂可單獨關掉（音效仍保留）；記在這台裝置上，下次打開維持同樣設定 */
+let musicOff = false;
+try { musicOff = localStorage.getItem("sel_music_off") === "1"; } catch (e) {}
+const bgmVol = () => muted || musicOff ? 0 : 背景音樂.音量;
+function applyMute() { if (bgm.gain && ac) { const t = ac.currentTime; bgm.gain.gain.cancelScheduledValues(t); bgm.gain.gain.setTargetAtTime(bgmVol(), t, .15); } }
 document.addEventListener("visibilitychange", () => { if (!ac) return; document.hidden ? ac.suspend() : ac.resume(); });
 
 const sfx = {
   tap: () => tone([660], .06), blip: () => tone([880], .03, "square", 0, .03),
   good: () => tone([523, 659, 784]), hmm: () => tone([392, 330], .16, "triangle", .14),
   badge: () => tone([784, 988, 1175, 1568], .14, "sine", .08), step: () => tone([180], .04, "triangle", 0, .05),
+  // 場景小發現
+  bird: () => tone([2100, 2500, 2200, 2600], .06, "sine", .07, .05),
+  page: () => tone([520, 660, 780], .1, "triangle", .07, .1),
+  sparkle: () => tone([1047, 1319, 1568, 2093], .12, "sine", .07, .07),
+};
+/* 情緒音效：角色換表情時，配一小段聲音幫助感受情緒（不用人聲，避免刻板印象） */
+const 情緒音效 = {
+  開心: () => tone([523, 659, 784], .14, "sine", .08, .12), 微笑: () => tone([523, 659, 784], .14, "sine", .08, .1),
+  放心: () => tone([440, 554, 659], .2, "sine", .1, .1), 歡迎: () => tone([587, 740, 880], .14, "sine", .08, .1),
+  難過: () => tone([440, 392, 330], .38, "sine", .22, .12), 抱歉: () => tone([392, 349, 294], .32, "sine", .2, .1),
+  生氣: () => tone([196, 185, 175], .16, "sawtooth", .09, .05),
+  尷尬: () => tone([660, 620, 660, 620], .08, "triangle", .07, .08),
+  著急: () => tone([587, 659, 587, 659], .07, "square", .06, .03), 緊張: () => tone([494, 523, 494, 523], .08, "square", .07, .03),
+  為難: () => tone([392, 370, 349], .26, "triangle", .18, .1),
+  平靜: () => tone([392, 523], .45, "sine", .28, .08),
 };
 function icon(name) {
   const d = 圖示[name]; if (!IMG.icons || !d) return "";
@@ -660,6 +737,14 @@ function icon(name) {
 }
 function paintMute() { $("mute").innerHTML = IMG.icons ? icon(muted ? "靜音" : "喇叭") : (muted ? "音效 關" : "音效 開"); }
 $("mute").onclick = () => { muted = !muted; paintMute(); applyMute(); };
+// 音符圖示：關掉時加上紅色斜線，和喇叭／靜音圖示的表達方式一致
+function paintMusic() {
+  const note = `<path d="M9 3v10.2a3 3 0 1 0 2 2.8V7h6V3z" fill="#3b2f2a"/>`;
+  const slash = musicOff ? `<line x1="4" y1="4" x2="20" y2="20" stroke="#e2574c" stroke-width="2.6" stroke-linecap="round"/>` : "";
+  $("music").innerHTML = `<svg viewBox="0 0 24 24">${note}${slash}</svg>`;
+}
+$("music").onclick = ev => { ev.stopPropagation(); musicOff = !musicOff; try { localStorage.setItem("sel_music_off", musicOff ? "1" : "0"); } catch (e) {} paintMusic(); applyMute(); };
+paintMusic();
 function heartsHTML(n) {
   if (IMG.icons) return icon("愛心").repeat(n) + icon("空心").repeat(5 - n);
   return '<span class="hrt">♥\uFE0E</span>'.repeat(n) + '<span class="hrt off">♥\uFE0E</span>'.repeat(5 - n);
@@ -916,6 +1001,47 @@ async function patrol() {
 }
 function stopPatrol() { patrolOn = false; return walkTo(E.老師, ...POS.老師).then(() => { E.老師.dir = "down"; }); }
 
+/* ---------- 場景小發現：點教室裡的東西，主角會走過去說一句正向的話 ----------
+   區塊：點擊範圍（地圖座標）；站位：主角站的位置；看：站好後面向哪邊；星：還沒看過時閃光的位置 */
+const 場景互動 = [
+  { 名稱: "窗戶", 區塊: [584, 60, 56, 290], 站位: [586, 220], 看: "right", 星: [612, 150], 聲: "bird",
+    話: ["外面的天空好藍喔！", "陽光暖暖的，好舒服～", "有小鳥飛過去耶！", "樹葉綠綠的，好漂亮"] },
+  { 名稱: "盆栽", 區塊: [55, 0, 60, 32], 站位: [84, 107], 看: "up", 星: [96, 14], 聲: "sparkle",
+    話: ["葉子長得好有精神！", "是誰把它照顧得這麼好？"] },
+  { 名稱: "書櫃", 區塊: [48, 32, 74, 70], 站位: [84, 107], 看: "up", 星: [84, 52], 聲: "page",
+    話: ["好多書！下課來看看", "這本故事書好像很好看", "看書可以去好多地方"] },
+  { 名稱: "地球儀", 區塊: [122, 0, 64, 100], 站位: [150, 107], 看: "up", 星: [149, 18], 聲: "sparkle",
+    話: ["台灣在這裡！", "世界好大，好想去看看", "每個地方的人都不一樣"] },
+  { 名稱: "黑板", 區塊: [192, 0, 256, 66], 站位: [240, 100], 看: "up", 星: [250, 30], 聲: "sparkle",
+    話: ["今天也要加油喔！", "黑板擦得好乾淨"] },
+  { 名稱: "公布欄", 區塊: [458, 0, 60, 52], 站位: [450, 104], 看: "up", 星: [488, 22], 聲: "page",
+    話: ["大家的作品都好棒！", "下次我也想貼上去"] },
+  { 名稱: "花", 區塊: [520, 0, 56, 96], 站位: [548, 106], 看: "up", 星: [548, 30], 聲: "sparkle",
+    話: ["花開得好漂亮！", "聞起來香香的～"] },
+  { 名稱: "置物櫃", 區塊: [0, 120, 58, 135], 站位: [68, 200], 看: "left", 星: [28, 160], 聲: "sparkle",
+    話: ["大家的東西都排得好整齊", "整整齊齊，看了好舒服"] },
+];
+let spotTarget = null;
+function checkSpot() {
+  if (!spotTarget || !control || !player || player.tx != null) return;
+  const sp = spotTarget; spotTarget = null;
+  if (Math.hypot(player.x - sp.站位[0], player.y - sp.站位[1]) > 14) return;
+  player.dir = sp.看; sp.seen = (sp.seen || 0) + 1;
+  (sfx[sp.聲] || sfx.sparkle)();
+  emote(player, sp.話[(sp.seen - 1) % sp.話.length], 2600);
+}
+function drawSpotStars(c, now) {
+  if (!control) return;
+  for (const sp of 場景互動) {
+    if (sp.seen) continue;
+    const [x, y] = sp.星, k = (Math.sin(now / 300 + x) + 1) / 2, r = 2 + k * 2.5;
+    c.save(); c.globalAlpha = .45 + k * .55; c.fillStyle = "#fff6c2"; c.strokeStyle = "rgba(242,163,58,.9)"; c.lineWidth = .8;
+    c.beginPath(); c.moveTo(x, y - r * 1.8); c.lineTo(x + r * .45, y - r * .45); c.lineTo(x + r * 1.8, y); c.lineTo(x + r * .45, y + r * .45);
+    c.lineTo(x, y + r * 1.8); c.lineTo(x - r * .45, y + r * .45); c.lineTo(x - r * 1.8, y); c.lineTo(x - r * .45, y - r * .45); c.closePath();
+    c.fill(); c.stroke(); c.restore();
+  }
+}
+
 /* ---------- 點地板移動 ---------- */
 let player = null, control = false, marker = null, zone = null, guide = null;
 /* ---------- 支線小任務 ---------- */
@@ -961,6 +1087,11 @@ cv.addEventListener("pointerdown", ev => {
     const n = EXTRA[q.對象];
     if (Math.abs(x - n.x) < 14 && y > n.y - 48 && y < n.y + 6) { questTarget = q; [tx, ty] = q.站位; break; }
   }
+  spotTarget = null;
+  if (!questTarget) for (const sp of 場景互動) {
+    const [bx, by, bw, bh] = sp.區塊;
+    if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) { spotTarget = sp; [tx, ty] = sp.站位; break; }
+  }
   // 點到桌子、同學或走不到的地方：由近到遠找一個真的走得到的位置
   let path = findPath(player.x, player.y, tx, ty);
   if (!path || !path.length) {
@@ -999,7 +1130,7 @@ function loop(now) {
   const frameDt = Math.min(.5, (now - last) / 1000); let rest = frameDt; last = now;
   while (rest > 0) { const s = Math.min(rest, .033); update(s); rest -= s; }
   if (zone && control && player && zone.test(player)) { const z = zone; zone = null; player.tx = player.ty = null; player.path = null; z.r(); }
-  checkQuest();
+  checkQuest(); checkSpot();
   updateCam(frameDt);
   const k = SCALE * view.z;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -1021,6 +1152,7 @@ function loop(now) {
   const all = [...Object.values(E), ...EXTRA].filter(e => e.visible).sort((a, b) => a.y - b.y);
   npcIdle(now);
   all.forEach(e => drawSprite(ctx, e, now));
+  drawSpotStars(ctx, now);
   if (player && control) { ctx.fillStyle = "#f2a33a"; ctx.beginPath(); ctx.moveTo(player.x - 4, player.y - 50); ctx.lineTo(player.x + 4, player.y - 50); ctx.lineTo(player.x, player.y - 45); ctx.fill(); }
   all.forEach(e => drawEmote(ctx, e));
   requestAnimationFrame(loop);
@@ -1036,6 +1168,7 @@ function setPortrait(slot, who, expr) {
   const sig = who + key;
   if (el.dataset.sig !== sig) {
     el.dataset.sig = sig; el.dataset.who = who;
+    if (key && 情緒音效[key]) 情緒音效[key]();
     const img = map ? IMG[`p_${who}_${map[key][0]}`] : null;
     if (img) el.innerHTML = `<img src="${img.src}" alt="${esc(who)}">`;
     else if (who !== "小明" && who !== "小華") { el.innerHTML = ""; el.dataset.sig = ""; el.classList.remove("on"); return; }  // 配角還沒有圖就不顯示
@@ -1088,12 +1221,23 @@ function choose(options, label = o => o.字 || o) {
   });
 }
 // 問題和選項都放在對話框裡；tag 是對話框左上角的小標籤（例如「步驟 1｜停」）
+/* 題目最後的（括號提示）另起一行，用小字顯示；「我訊息」做成三段句型卡 */
+function qHTML(q) {
+  const m = q.match(/^(.*?)（(.+)）$/);
+  if (!m) return esc(q);
+  let tip = esc(m[2]);
+  if (/我訊息/.test(m[2])) {
+    const parts = (m[2].split(/[:：]/)[1] || "").split(/，/).map(x => x.trim()).filter(Boolean);
+    tip = `<span class="qk">試試<u>我訊息</u></span>` + parts.map((x, i) => `<span class="qs qs${i}">${esc(x.replace(/……/g, "…"))}</span>`).join(`<span class="qa">→</span>`);
+  }
+  return `${esc(m[1])}<span class="qhint">💡 ${tip}</span>`;
+}
 async function ask(tag, question, options, label) {
   const dlg = $("dlg");
   $("pl").classList.remove("dim"); $("pr").classList.add("dim");
   dlg.classList.add("on", "asking"); dlg.classList.remove("narr");
   $("name").style.display = "block"; $("name").textContent = tx(tag || "選一選"); $("name").style.background = "var(--accent)";
-  $("txt").textContent = tx(question); $("more").style.visibility = "hidden";
+  $("txt").innerHTML = qHTML(tx(question)); $("more").style.visibility = "hidden";
   return choose(options, label);
 }
 function hint(text) { const h = $("hint"); if (text) { h.textContent = tx(text); h.style.display = "block"; } else h.style.display = "none"; }
@@ -1151,7 +1295,11 @@ function cardTask(cfg, who) {
 }
 function listTask(title, opts, hint) {
   return new Promise(res => {
-    const H = hint ? `<div class="needhint"><div class="ht">${esc(hint.標題)}</div><ul>${hint.內容.map(x => `<li>${esc(x)}</li>`).join("")}</ul><div class="hn">${esc(hint.註)}</div></div>` : "";
+    // 每一條拆成「感受（色塊）→ 可能需要 + 需要（畫底線）」，一眼看出對應關係
+    const 感受色 = { 生氣: "#e2574c", 難過: "#5b8fd6", 著急: "#f2994a", 擔心: "#9a7bd1" };
+    const item = x => { const [f, n] = x.split(/\s*→\s*/), need = (n || "").replace(/^可能需要/, ""), c = 感受色[Object.keys(感受色).find(k => f.includes(k))] || "#8a8fb8";
+      return `<div class="ni"><span class="nf" style="background:${c}">${esc(f)}</span><span class="na">→</span><span class="nd"><span class="nk">可能需要</span> <b>${esc(need).replace(/、/g, "</b>、<b>")}</b></span></div>`; };
+    const H = hint ? `<div class="needhint"><div class="ht">💡 ${esc(hint.標題).replace("「需要」", "「<u>需要</u>」")}</div><div class="nl">${hint.內容.map(item).join("")}</div><div class="hn">${esc(hint.註).replace("「可能」", "「<u>可能</u>」")}</div></div>` : "";
     const s = sheet(`<div class="ribbon">任務</div><h2>${esc(title)}</h2>${H}<div class="opts"></div>`);
     opts.forEach((o, i) => { const b = document.createElement("button"); b.className = "choice"; b.textContent = tx(o); b.onclick = () => { sfx.tap(); res(i); }; s.querySelector(".opts").appendChild(b); });
   });
@@ -1187,15 +1335,17 @@ function thermoTask() {
 function ahaPanel() {
   return new Promise(res => {
     const pills = a => a.map(x => `<span class="pill">${esc(x)}</span>`).join("");
-    const s = sheet(`<h2 style="text-align:center;margin-bottom:.35em">同一件事，兩種心情</h2>
+    const s = sheet(`<h2 style="text-align:center;margin:0 0 .4em;font-size:1.2em">同一件事，兩種心情</h2>
       <div class="aha">
-        <div class="col" style="background:#e3eefb"><div class="ahaimg">${portraitHTML("小明", "難過")}</div><div><b style="color:var(--ming)">小明</b><br>感受：${pills(S.mingFeel)}<br>心情溫度：${S.mingTemp} / 5<br>想要：${pills([S.mingNeed])}</div></div>
-        <div class="col" style="background:#e0f3ec"><div class="ahaimg">${portraitHTML("小華", "為難")}</div><div><b style="color:var(--hua)">小華</b><br>感受：${pills(S.huaFeel)}<br>想要：${pills([S.huaNeed])}</div></div>
+        <div class="col" style="background:#e3eefb"><div class="ahaimg">${portraitHTML("小明", "難過")}</div><div><div class="nm" style="color:var(--ming)">小明<small>心情溫度 ${S.mingTemp} / 5</small></div>
+          <div class="kv"><span>感受</span><span>${pills(S.mingFeel)}</span><span>想要</span><span>${pills([S.mingNeed])}</span></div></div></div>
+        <div class="col" style="background:#e0f3ec"><div class="ahaimg">${portraitHTML("小華", "為難")}</div><div><div class="nm" style="color:var(--hua)">小華</div>
+          <div class="kv"><span>感受</span><span>${pills(S.huaFeel)}</span><span>想要</span><span>${pills([S.huaNeed])}</span></div></div></div>
       </div>
-      <div class="quote">小明以為：「他們不想要我。」<br>小華其實是：「我怕違反規定，又太急了。」</div>
-      <h2 style="text-align:center;margin:.45em 0 .1em;font-size:1.15em">看不到對方的心，就可能誤會。</h2>
-      <div class="understand">${esc(台詞.理解提醒)}</div>
-      <div class="row"><button class="btn" id="ok">回到現在 ▶</button></div>`);
+      <div class="gaps"><span class="gtag" style="background:var(--ming)">小明以為</span><span>「他們<span class="mk m">不想要我</span>。」</span>
+        <span class="gtag" style="background:var(--hua)">小華其實是</span><span>「我<span class="mk h">怕違反規定</span>，又<span class="mk h">太急了</span>。」</span></div>
+      <div class="lesson"><b>💡 <span class="mk">看不到對方的心</span>，就可能<span class="mk">誤會</span>。</b><span>${esc(台詞.理解提醒).replace("；", "；<br>").replace("找到更好的做法", `<span class="ul">找到更好的做法</span>`)}</span></div>
+      <div class="row" style="margin-top:.6em"><button class="btn" id="ok">回到現在 ▶</button></div>`);
     sfx.badge(); s.querySelector("#ok").onclick = () => { sfx.tap(); closeSheet(); res(); };
   });
 }
@@ -1226,9 +1376,11 @@ function summaryPanel() {
   if (S.kept.length) 讚.push(["為難", "你勇敢面對自己的選擇", "有時候你選了不一樣的做法，也看見了結果，還認真想了對方的感受。願意從經驗裡學習，就是在長大。"]);
   if (S.leaderOk) 讚.push(["得意", "換你當組長，也做得很好", "你知道拒絕別人時，說出原因很重要，這樣對方就不會誤會。"]);
   const s = sheet(`<h2 style="text-align:center">你的旅程，有好多值得被看見的地方</h2>
-    <div class="pledge"><div class="pl1">我的好朋友約定</div><div class="pl2">下次我和同學意見不同的時候，我會先「${esc(S.reflect)}」。</div>
-      <div class="pl3">把這句話寫在便利貼上，貼到班上的「好朋友約定」海報吧！</div></div>
-    <div class="praise">${讚.map(([ic, t, w]) => `<div class="pcard"><div class="pic">${icon(ic) || "★"}</div><div><div class="pt">${esc(t)}</div><div class="pw">${esc(w)}</div></div></div>`).join("")}</div>
+    <div class="pledge"><div class="pl1">📌 我的好朋友約定</div>
+      <div class="pl0">下次我和同學意見不同的時候，我會先——</div>
+      <div class="pl2">「<span class="mk">${esc(S.reflect)}</span>」</div>
+      <div class="pl3"><span class="st">① 寫在<u>便利貼</u>上</span><span>➜</span><span class="st">② 貼到班上的<u>「好朋友約定」海報</u></span></div></div>
+    <div class="praise">${讚.map(([ic, t, w]) => `<div class="pcard"><div class="pic">${icon(ic) || "★"}</div><div><div class="pt">${esc(t)}</div><div class="pw">${esc(w).replace(/「(.+?)」/g, "「<b>$1</b>」")}</div></div></div>`).join("")}</div>
     <div class="row"><button class="btn ghost" id="again">↺ 再玩一次</button></div>`);
   s.querySelector("#again").onclick = () => location.reload();
 }
@@ -1427,6 +1579,51 @@ function showPicture(name) {
 }
 function hidePicture() { $("pic").classList.remove("on"); }
 /* 完成小任務：星星從畫面中央跳出來，再飛進上方的「善意星星」計數 */
+/* 停、想、說、找：獲得時徽章放大出現在畫面中間，說明意思，再飛進上方的格子 */
+const 徽章說明 = { 停: "先停下來，讓自己冷靜", 想: "想一想對方的感受", 說: "好好說出自己的感受", 找: "一起找到好辦法" };
+async function badgeFly(b) {
+  const st = stage.getBoundingClientRect(), f = document.createElement("div");
+  f.className = "flystar"; f.style.left = "50%"; f.style.top = "40%";
+  f.innerHTML = `<div class="big"><span class="bigbadge">${b}</span></div><div class="cap">獲得「${b}」</div><div class="sub">${徽章說明[b] || ""}</div>`;
+  stage.appendChild(f);
+  await sleep(30); f.classList.add("show"); sfx.badge();
+  for (let i = 0; i < 10; i++) {
+    const sp = document.createElement("div"), a = i / 10 * Math.PI * 2;
+    sp.className = "spark"; sp.style.left = "50%"; sp.style.top = "40%"; stage.appendChild(sp);
+    requestAnimationFrame(() => { sp.style.transform = `translate(${Math.cos(a) * 7}em,${Math.sin(a) * 5}em)`; sp.style.opacity = 0; });
+    setTimeout(() => sp.remove(), 700);
+  }
+  await sleep(1300);
+  const slot = [...$("badges").children].find(x => x.textContent === b);
+  if (slot) {
+    const t = slot.getBoundingClientRect();
+    f.classList.add("fly");
+    f.style.left = ((t.left + t.width / 2 - st.left) / st.width * 100) + "%";
+    f.style.top = ((t.top + t.height / 2 - st.top) / st.height * 100) + "%";
+    f.style.transform = "translate(-50%,-50%) scale(.15)"; f.style.opacity = .3;
+    await sleep(700);
+  }
+  f.remove();
+  S.badges.add(b); paintHUD();
+  const s2 = [...$("badges").children].find(x => x.textContent === b);
+  if (s2) s2.classList.add("pop");
+  tone([1046, 1318], .12, "sine", .07);
+}
+/* 愛心（友誼）變多或變少：愛心跳一下／搖一下，旁邊飄出 +1、-1 */
+function heartChange(before, after) {
+  if (before === after) return;
+  const hs = [...$("hearts").children], up = after > before;
+  for (let i = Math.min(before, after); i < Math.max(before, after); i++) if (hs[i]) hs[i].classList.add(up ? "hpop" : "hshake");
+  const st = stage.getBoundingClientRect(), h = $("hearts").getBoundingClientRect(), tip = document.createElement("div");
+  tip.className = "floattip";
+  tip.style.color = tip.style.borderColor = up ? "#e2574c" : "#8a8fb8";
+  tip.textContent = up ? `友誼 +${after - before} ♥` : `友誼 ${after - before}`;
+  tip.style.left = ((h.left + h.width / 2 - st.left) / st.width * 100) + "%";
+  tip.style.top = ((h.bottom - st.top) / st.height * 100 + 1) + "%";
+  stage.appendChild(tip); setTimeout(() => tip.remove(), 1700);
+  $("hud").classList.remove("glow"); void $("hud").offsetWidth; if (up) $("hud").classList.add("glow");
+  up ? tone([784, 988, 1319], .16, "sine", .09, .12) : tone([392, 311], .3, "triangle", .2, .1);
+}
 async function starFly() {
   const st = stage.getBoundingClientRect(), f = document.createElement("div");
   f.className = "flystar"; f.style.left = "50%"; f.style.top = "42%";
@@ -1470,8 +1667,9 @@ async function chooseLoop(cfg, onPick) {
     const o = cfg.選項[i];
     S.tried.add(o.字);
     if (onPick) await onPick(o);
+    const fr0 = S.fr;
     S.m = clamp(S.m + (o.小明 || 0), 1, 5); S.h = clamp(S.h + (o.小華 || 0), 1, 5); S.fr = clamp(S.fr + (o.友誼 || 0), 0, 5);
-    paintHUD();
+    paintHUD(); heartChange(fr0, S.fr);
     if (o.重來) {
       sfx.hmm();
       if (await perspective(o)) { Object.assign(S, snap); paintHUD(); continue; }
@@ -1480,7 +1678,9 @@ async function chooseLoop(cfg, onPick) {
       if (o.繼續) continue;              // 還沒找到辦法：老師引導後再想一次
       return o;
     }
-    (o.徽章 || []).forEach(b => S.badges.add(b)); paintHUD(); sfx.badge();
+    let got = 0;
+    for (const b of o.徽章 || []) if (!S.badges.has(b)) { await sleep(500); await badgeFly(b); got++; }
+    if (!got) sfx.badge();
     await feedback("good", o.回饋);
     return o;
   }
@@ -1520,7 +1720,7 @@ function setupPanel() {
           <div class="sg" data-who="f"><button data-g="男" class="on">男生</button><button data-g="女">女生</button></div>
         </div></div>
       </div>
-      <div class="snote">${esc(C.提醒)}</div>
+      <div class="snote"><span class="sh">💡 取名<br>小提醒</span><ol><li>請自己取一個<u>稱號</u>，<b>不要用班上同學的真實名字</b>喔！</li><li>故事裡的角色<b>不等於真實的你</b>，也<b>不代表班上任何人</b>。</li></ol></div>
       <div class="row"><button class="btn big" id="go">開始遊戲 ▶</button></div>`;
     s.classList.add("on"); s.scrollTop = 0;
     const paint = () => { $("fp").innerHTML = face("p", CFG.p.g); $("ff").innerHTML = face("f", CFG.f.g); };
