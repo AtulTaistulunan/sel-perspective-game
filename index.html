@@ -216,6 +216,22 @@ textarea{width:100%;font-size:1em;font-family:inherit;border:.2em solid #e2d5bd;
 .pw b{color:var(--ink);background:linear-gradient(transparent 55%,#ffe2a0 55%,#ffe2a0 95%,transparent 95%);padding:0 .05em}
 .pledge{position:relative;margin:.5em auto .9em;max-width:34em;background:#fff6c8;border-radius:.4em;padding:.9em 1.2em .7em;transform:rotate(-.6deg);text-align:center;box-shadow:0 .25em .5em rgba(120,80,20,.15)}
 .pledge:before{content:"";position:absolute;top:-.55em;left:50%;width:5em;height:1.1em;margin-left:-2.5em;background:rgba(240,200,120,.75);transform:rotate(2deg);border-radius:.15em}
+.board{background:#c9955a;background-image:radial-gradient(rgba(90,55,20,.25) 1px,transparent 1.5px);background-size:.5em .5em;border:.35em solid #8a5a33;border-radius:.6em;padding:.45em .8em .7em;box-shadow:inset 0 0 .6em rgba(60,30,10,.35)}
+.bhead{width:fit-content;margin:0 auto .55em;background:#fffdf5;border-radius:.3em;padding:.1em 1em;font-weight:700;color:var(--wood);box-shadow:0 .15em .3em rgba(0,0,0,.2)}
+.bnotes{display:grid;grid-template-columns:repeat(2,minmax(0,17em));justify-content:center;align-items:start;gap:.7em 1.4em}
+.bnote{position:relative;background:#fff6a8;padding:.55em .8em .4em;font-size:.85em;line-height:1.45;transform:rotate(var(--r));box-shadow:0 .2em .35em rgba(0,0,0,.25);color:var(--ink)}
+.bnote:nth-child(2){background:#d9f0ff}.bnote:nth-child(4){background:#dff5dc}
+.bnote.mine{background:#ffe1ec;outline:.15em solid #f08aa8;animation:stickin .9s cubic-bezier(.3,1.4,.5,1) .15s both}
+.bnote.mine b{background:linear-gradient(transparent 55%,#ffcc66 55%,#ffcc66 95%,transparent 95%)}
+.bpin{position:absolute;top:-.3em;left:50%;width:.7em;height:.7em;margin-left:-.35em;border-radius:50%;background:#e2574c;box-shadow:0 .1em .15em rgba(0,0,0,.35)}
+.bnote:nth-child(2) .bpin{background:#5b8fd6}.bnote:nth-child(4) .bpin{background:#3fae6a}
+.btag{display:block;color:#d0577a;font-size:.85em;font-weight:700;margin-bottom:.1em}
+@keyframes stickin{0%{opacity:0;transform:translateY(-4em) scale(1.5) rotate(-14deg)}60%{opacity:1;transform:translateY(0) scale(1.06) rotate(calc(var(--r) + 2deg))}100%{opacity:1;transform:rotate(var(--r))}}
+.promise{text-align:center;align-self:center;font-weight:700;font-size:1.1em;color:#d0577a;animation:bpop .7s ease}
+.btn.small{font-size:.8em;padding:.3em 1em}
+.bmsg{text-align:center;margin-top:.5em;font-size:.92em;line-height:1.6;color:var(--soft)}
+.bmsg u{text-decoration:underline wavy #e8a33c;text-underline-offset:.25em;color:var(--ink)}
+.bmsg b{color:var(--ink);background:linear-gradient(transparent 55%,#ffd98a 55%,#ffd98a 95%,transparent 95%)}
 .pl1{display:inline-block;background:#e0a43a;color:#fff;font-size:.8em;border-radius:1em;padding:.05em .8em;margin-bottom:.45em}
 .pl0{font-size:.92em;color:var(--soft)}
 .pl2{font-size:1.35em;font-weight:700;margin:.15em 0 .55em;line-height:1.5}
@@ -1381,8 +1397,36 @@ function summaryPanel() {
       <div class="pl2">「<span class="mk">${esc(S.reflect)}</span>」</div>
       <div class="pl3"><span class="st">① 寫在<u>便利貼</u>上</span><span>➜</span><span class="st">② 貼到班上的<u>「好朋友約定」海報</u></span></div></div>
     <div class="praise">${讚.map(([ic, t, w]) => `<div class="pcard"><div class="pic">${icon(ic) || "★"}</div><div><div class="pt">${esc(t)}</div><div class="pw">${esc(w).replace(/「(.+?)」/g, "「<b>$1</b>」")}</div></div></div>`).join("")}</div>
-    <div class="row"><button class="btn ghost" id="again">↺ 再玩一次</button></div>`);
-  s.querySelector("#again").onclick = () => location.reload();
+    <div class="row"><button class="btn" id="again">📌 把我的約定貼上公布欄</button></div>`);
+  s.querySelector("#again").onclick = () => { sfx.tap(); boardPanel(); };
+}
+/* 再玩一次之前：讓學生看到自己的便利貼貼上班上的「好朋友約定」公布欄 */
+function boardPanel() {
+  const mine = S.reflect || "說出我的感受，而不是罵人";
+  const others = 任務.反思.選項.filter(x => x !== mine).slice(0, 3);
+  const notes = [...others.slice(0, 2), null, ...others.slice(2)];
+  const tilt = [-3, 2, -1, 3];
+  const s = sheet(`<h2 style="text-align:center;margin:0 0 .35em">📌 你的約定貼上去囉！</h2>
+    <div class="board"><div class="bhead">我們這一班的好朋友約定</div>
+      <div class="bnotes">${notes.map((x, i) => x === null
+        ? `<div class="bnote mine" style="--r:${tilt[i]}deg"><span class="bpin"></span><span class="btag">★ 我的約定</span>我會先「<b>${esc(mine)}</b>」</div>`
+        : `<div class="bnote" style="--r:${tilt[i]}deg"><span class="bpin"></span>我會先「${esc(x)}」</div>`).join("")}</div>
+    </div>
+    <div class="bmsg">你的便利貼已經貼在班上的<u>「好朋友約定」公布欄</u>上了！<br>下次和同學意見不同時，記得看看它，<b>一起做到喔</b>。</div>
+    <div class="row" id="act"><button class="btn" id="go">💪 我會做到！</button></div>`);
+  setTimeout(() => { sfx.badge(); }, 650);
+  // 按「我會做到」：給一個小小的承諾儀式，再留一個不搶眼的「再玩一次」給老師或下一位同學
+  s.querySelector("#go").onclick = () => {
+    sfx.good(); tone([784, 988, 1175, 1568], .16, "sine", .09, .12);
+    for (let i = 0; i < 12; i++) {
+      const sp = document.createElement("div"), a = i / 12 * Math.PI * 2;
+      sp.className = "spark"; sp.style.left = "50%"; sp.style.top = "45%"; stage.appendChild(sp);
+      requestAnimationFrame(() => { sp.style.transform = `translate(${Math.cos(a) * 9}em,${Math.sin(a) * 6}em)`; sp.style.opacity = 0; });
+      setTimeout(() => sp.remove(), 700);
+    }
+    s.querySelector("#act").innerHTML = `<div class="promise">✨ 從今天開始，我們一起做到！</div><button class="btn ghost small" id="replay">↺ 再玩一次</button>`;
+    s.querySelector("#replay").onclick = () => location.reload();
+  };
 }
 function breathe() {
   return new Promise(async res => {
